@@ -202,6 +202,34 @@ CREATE TABLE tasks (
 CREATE INDEX ON tasks (status, due_on);
 CREATE INDEX ON tasks (entity_type, entity_id);
 
+CREATE TABLE resources (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type            TEXT NOT NULL,        -- Link / SOP
+    title           TEXT NOT NULL,
+    category        TEXT,
+    url             TEXT,
+    description     TEXT,
+    process_text    TEXT,
+    created_by      BIGINT REFERENCES users(id),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Tracked queue only, matching the prototype's actual behaviour — no real
+-- WhatsApp/SMS send integration. Ops mark Pending -> Sent by hand.
+CREATE TABLE customer_messages (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type            TEXT NOT NULL,
+    order_id        BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    box_id          BIGINT REFERENCES boxes(id) ON DELETE SET NULL,
+    status          TEXT NOT NULL DEFAULT 'Pending',
+    body            TEXT,
+    created_by      BIGINT REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    sent_at         TIMESTAMPTZ
+);
+CREATE INDEX ON customer_messages (order_id);
+CREATE INDEX ON customer_messages (status);
+
 -- ---------------------------------------------------------------- computed
 
 CREATE TABLE eta_snapshots (

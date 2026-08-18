@@ -226,6 +226,38 @@ export interface Task {
   completed_at: string | null;
 }
 
+export interface Resource {
+  id: number;
+  type: string;
+  title: string;
+  category: string | null;
+  url: string | null;
+  description: string | null;
+  process_text: string | null;
+  updated_at: string;
+}
+
+export const MESSAGE_TYPES = [
+  "Factory Dispatch",
+  "China Warehouse",
+  "Flight Update",
+  "Delhi Warehouse",
+  "Tracking Link",
+  "Delivered",
+  "Feedback",
+] as const;
+
+export interface CustomerMessage {
+  id: number;
+  type: string;
+  order_number: string;
+  box_aft_number: string | null;
+  status: string;
+  body: string | null;
+  created_at: string;
+  sent_at: string | null;
+}
+
 export interface Consolidation {
   unassigned_weight_kg: string;
   unassigned_box_count: number;

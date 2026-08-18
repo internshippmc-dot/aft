@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../lib/api";
 import { Me, OrderDetail, ReturnCase, Shipment } from "../lib/types";
@@ -5,6 +6,7 @@ import { LegBar } from "../components/LegBar";
 import { inr } from "../lib/format";
 import { etaNote } from "../lib/etaNote";
 import { useToast } from "../components/Toast";
+import { QueueMessageDrawer } from "../components/QueueMessageDrawer";
 
 export function OrderDetailView({
   orderNumber,
@@ -17,6 +19,7 @@ export function OrderDetailView({
 }) {
   const toast = useToast();
   const queryClient = useQueryClient();
+  const [messageOpen, setMessageOpen] = useState(false);
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
     queryFn: () => api.get<OrderDetail>(`/orders/${encodeURIComponent(orderNumber)}`),
@@ -82,7 +85,7 @@ export function OrderDetailView({
               {bookShipment.isPending ? "Booking…" : "Book with iThink"}
             </button>
           )}
-          <button className="btn ghost" onClick={() => toast("Hands off to the WhatsApp template engine")}>
+          <button className="btn ghost" onClick={() => setMessageOpen(true)}>
             Queue status message
           </button>
         </div>
@@ -166,6 +169,8 @@ export function OrderDetailView({
           ))}
         </tbody>
       </table>
+
+      <QueueMessageDrawer open={messageOpen} orderNumber={order.order_number} onClose={() => setMessageOpen(false)} />
     </>
   );
 }

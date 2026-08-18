@@ -9,6 +9,8 @@ from app.models.plumbing import SheetImport, SyncState
 from app.models.payment import Payment
 from app.models.return_case import ReturnCase
 from app.models.task import Task
+from app.models.resource import Resource
+from app.models.customer_message import CustomerMessage
 
 __all__ = [
     "User",
@@ -28,4 +30,6 @@ __all__ = [
     "Payment",
     "ReturnCase",
     "Task",
+    "Resource",
+    "CustomerMessage",
 ]
