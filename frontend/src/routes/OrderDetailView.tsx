@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../lib/api";
-import { Me, OrderDetail, Shipment } from "../lib/types";
+import { Me, OrderDetail, ReturnCase, Shipment } from "../lib/types";
 import { LegBar } from "../components/LegBar";
 import { inr } from "../lib/format";
 import { etaNote } from "../lib/etaNote";
@@ -31,6 +31,12 @@ export function OrderDetailView({
     },
     onError: (err) => toast(err instanceof ApiError ? err.message : "Could not book the shipment."),
   });
+
+  const { data: returnCases } = useQuery({
+    queryKey: ["returns", "order", orderNumber],
+    queryFn: () => api.get<ReturnCase[]>(`/returns?order_number=${encodeURIComponent(orderNumber)}`),
+  });
+  const openCase = returnCases?.[0];
 
   if (isLoading || !order) return <div className="dim" style={{ padding: 24 }}>Loading…</div>;
 
@@ -118,6 +124,12 @@ export function OrderDetailView({
               <div className="v">{order.shipment.delivered_on ? "Delivered" : order.shipment.status || "Booked"}</div>
             </div>
           </>
+        )}
+        {openCase && (
+          <div className="fact">
+            <div className="k">{openCase.type}</div>
+            <div className="v">{openCase.status}</div>
+          </div>
         )}
       </div>
 

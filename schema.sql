@@ -170,6 +170,22 @@ CREATE TABLE payments (
 CREATE INDEX ON payments (occurred_on DESC);
 CREATE INDEX ON payments (box_id);
 
+CREATE TABLE returns (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id        BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    type            TEXT NOT NULL,        -- Return / Exchange
+    reason          TEXT,
+    status          TEXT NOT NULL DEFAULT 'Requested',
+    requested_on    DATE NOT NULL,
+    next_action     TEXT,
+    notes           TEXT,
+    created_by      BIGINT REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON returns (order_id);
+CREATE INDEX ON returns (status);
+
 -- ---------------------------------------------------------------- computed
 
 CREATE TABLE eta_snapshots (

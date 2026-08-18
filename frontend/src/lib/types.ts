@@ -188,6 +188,31 @@ export interface Payment {
   created_at: string;
 }
 
+export const RETURN_STATUSES = [
+  "Requested",
+  "Approved",
+  "Pickup Scheduled",
+  "In Transit Back",
+  "Received",
+  "Refunded",
+  "Replacement Sent",
+  "Closed",
+] as const;
+
+export interface ReturnCase {
+  id: number;
+  order_number: string;
+  customer_name: string | null;
+  type: string;
+  reason: string | null;
+  status: string;
+  requested_on: string;
+  next_action: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Consolidation {
   unassigned_weight_kg: string;
   unassigned_box_count: number;

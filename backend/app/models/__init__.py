@@ -7,6 +7,7 @@ from app.models.leg import LegEvent, EtaSnapshot, Shipment
 from app.models.audit import AuditLog
 from app.models.plumbing import SheetImport, SyncState
 from app.models.payment import Payment
+from app.models.return_case import ReturnCase
 
 __all__ = [
     "User",
@@ -24,4 +25,5 @@ __all__ = [
     "SheetImport",
     "SyncState",
     "Payment",
+    "ReturnCase",
 ]

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api import admin, auth, boxes, consignments, consolidation, integrations, orders, payments, search
+from app.api import admin, auth, boxes, consignments, consolidation, integrations, orders, payments, returns, search
 from app.auth.ratelimit import check_rate_limit
 from app.auth.session import SESSION_COOKIE
 from app.config import get_settings
@@ -111,6 +111,7 @@ app.include_router(consolidation.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(integrations.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
+app.include_router(returns.router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -10,6 +10,7 @@ import { NewBoxDrawer } from "../components/NewBoxDrawer";
 import { BoxDetailView } from "./BoxDetailView";
 import { OrderDetailView } from "./OrderDetailView";
 import { PaymentsView } from "./PaymentsView";
+import { ReturnsView } from "./ReturnsView";
 
 type View = { type: "box"; aft: string } | { type: "order"; orderNumber: string } | null;
 type Filter = "all" | "transit" | "queue";
@@ -55,7 +56,6 @@ const COMING_SOON: Partial<Record<Section, { title: string; body: string }>> = {
   tasks: { title: "Tasks & Reminders", body: "Coming in a follow-up build." },
   orders: { title: "All Orders", body: "A full order table is on the roadmap — use search above to jump to a specific order." },
   messages: { title: "Customer Messages", body: "Coming in a follow-up build." },
-  returns: { title: "Returns & Exchanges", body: "Coming in a follow-up build." },
   resources: { title: "Resources & SOPs", body: "Coming in a follow-up build." },
   settings: { title: "Settings", body: "Coming in a follow-up build." },
 };
@@ -199,6 +199,10 @@ export function Shell({ me }: { me: Me }) {
           ) : section === "payments" ? (
             <section className="detail">
               <PaymentsView me={me} />
+            </section>
+          ) : section === "returns" ? (
+            <section className="detail">
+              <ReturnsView me={me} />
             </section>
           ) : (
             <section className="detail">
