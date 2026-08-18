@@ -143,7 +143,7 @@ export function Shell({ me }: { me: Me }) {
       </aside>
 
       <div className="main">
-        <header>
+        <header className="topbar">
           <SearchBar onPickOrder={pickOrder} onPickBox={pickBox} />
           <div className="spacer" />
           {me.role === "owner" && (
