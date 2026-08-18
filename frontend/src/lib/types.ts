@@ -174,6 +174,20 @@ export interface SearchResults {
   boxes: SearchBoxHit[];
 }
 
+export interface Payment {
+  id: number;
+  occurred_on: string;
+  type: string;
+  payee: string;
+  reference: string | null;
+  box_aft_number: string | null;
+  amount_inr: string;
+  paid_by: string;
+  method: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Consolidation {
   unassigned_weight_kg: string;
   unassigned_box_count: number;

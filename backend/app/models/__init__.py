@@ -6,6 +6,7 @@ from app.models.box import Box, BoxItem
 from app.models.leg import LegEvent, EtaSnapshot, Shipment
 from app.models.audit import AuditLog
 from app.models.plumbing import SheetImport, SyncState
+from app.models.payment import Payment
 
 __all__ = [
     "User",
@@ -22,4 +23,5 @@ __all__ = [
     "AuditLog",
     "SheetImport",
     "SyncState",
+    "Payment",
 ]

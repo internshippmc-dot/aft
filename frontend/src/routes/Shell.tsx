@@ -9,6 +9,7 @@ import { BoxListAside } from "../components/BoxListAside";
 import { NewBoxDrawer } from "../components/NewBoxDrawer";
 import { BoxDetailView } from "./BoxDetailView";
 import { OrderDetailView } from "./OrderDetailView";
+import { PaymentsView } from "./PaymentsView";
 
 type View = { type: "box"; aft: string } | { type: "order"; orderNumber: string } | null;
 type Filter = "all" | "transit" | "queue";
@@ -48,13 +49,12 @@ const NAV: { label: string; groups: { label: string; section: Section; icon: str
   },
 ];
 
-const COMING_SOON: Record<Exclude<Section, "batches">, { title: string; body: string }> = {
+const COMING_SOON: Partial<Record<Section, { title: string; body: string }>> = {
   dashboard: { title: "Dashboard", body: "A rollup view is on the roadmap — for now, AFT Batches is the working view." },
   control: { title: "China Control Tower", body: "A kanban-style stage board is on the roadmap." },
   tasks: { title: "Tasks & Reminders", body: "Coming in a follow-up build." },
   orders: { title: "All Orders", body: "A full order table is on the roadmap — use search above to jump to a specific order." },
   messages: { title: "Customer Messages", body: "Coming in a follow-up build." },
-  payments: { title: "Payments", body: "Coming in a follow-up build." },
   returns: { title: "Returns & Exchanges", body: "Coming in a follow-up build." },
   resources: { title: "Resources & SOPs", body: "Coming in a follow-up build." },
   settings: { title: "Settings", body: "Coming in a follow-up build." },
@@ -196,11 +196,15 @@ export function Shell({ me }: { me: Me }) {
                 )}
               </section>
             </div>
+          ) : section === "payments" ? (
+            <section className="detail">
+              <PaymentsView me={me} />
+            </section>
           ) : (
             <section className="detail">
               <div className="empty">
-                <h3>{COMING_SOON[section].title}</h3>
-                <p>{COMING_SOON[section].body}</p>
+                <h3>{COMING_SOON[section]!.title}</h3>
+                <p>{COMING_SOON[section]!.body}</p>
               </div>
             </section>
           )}
