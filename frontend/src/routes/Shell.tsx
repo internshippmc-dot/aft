@@ -13,7 +13,55 @@ import { OrderDetailView } from "./OrderDetailView";
 type View = { type: "box"; aft: string } | { type: "order"; orderNumber: string } | null;
 type Filter = "all" | "transit" | "queue";
 
+type Section = "dashboard" | "batches" | "control" | "tasks" | "orders" | "messages" | "payments" | "returns" | "resources" | "settings";
+
+const NAV: { label: string; groups: { label: string; section: Section; icon: string; badge?: string }[] }[] = [
+  { label: "Home", groups: [{ label: "Dashboard", section: "dashboard", icon: "⌂" }] },
+  {
+    label: "Logistics",
+    groups: [
+      { label: "AFT Batches", section: "batches", icon: "▣" },
+      { label: "China Control Tower", section: "control", icon: "⇄" },
+      { label: "Tasks & Reminders", section: "tasks", icon: "◷" },
+    ],
+  },
+  {
+    label: "Orders",
+    groups: [
+      { label: "All Orders", section: "orders", icon: "☷" },
+      { label: "Customer Messages", section: "messages", icon: "✉" },
+    ],
+  },
+  {
+    label: "Finance & After Sales",
+    groups: [
+      { label: "Payments", section: "payments", icon: "₹" },
+      { label: "Returns & Exchanges", section: "returns", icon: "↩" },
+    ],
+  },
+  {
+    label: "System",
+    groups: [
+      { label: "Resources & SOPs", section: "resources", icon: "↗" },
+      { label: "Settings", section: "settings", icon: "⚙" },
+    ],
+  },
+];
+
+const COMING_SOON: Record<Exclude<Section, "batches">, { title: string; body: string }> = {
+  dashboard: { title: "Dashboard", body: "A rollup view is on the roadmap — for now, AFT Batches is the working view." },
+  control: { title: "China Control Tower", body: "A kanban-style stage board is on the roadmap." },
+  tasks: { title: "Tasks & Reminders", body: "Coming in a follow-up build." },
+  orders: { title: "All Orders", body: "A full order table is on the roadmap — use search above to jump to a specific order." },
+  messages: { title: "Customer Messages", body: "Coming in a follow-up build." },
+  payments: { title: "Payments", body: "Coming in a follow-up build." },
+  returns: { title: "Returns & Exchanges", body: "Coming in a follow-up build." },
+  resources: { title: "Resources & SOPs", body: "Coming in a follow-up build." },
+  settings: { title: "Settings", body: "Coming in a follow-up build." },
+};
+
 export function Shell({ me }: { me: Me }) {
+  const [section, setSection] = useState<Section>("batches");
   const [view, setView] = useState<View>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [newBoxOpen, setNewBoxOpen] = useState(false);
@@ -59,75 +107,107 @@ export function Shell({ me }: { me: Me }) {
     queryClient.clear();
   }
 
+  function pickBox(aft: string) {
+    setSection("batches");
+    setView({ type: "box", aft });
+  }
+  function pickOrder(orderNumber: string) {
+    setSection("batches");
+    setView({ type: "order", orderNumber });
+  }
+
   return (
-    <div id="app">
-      <header>
-        <div className="wordmark">
-          Actually Fair <span>/ Ops</span>
+    <div className="app">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="logo">AF</div>
+          <div>
+            <h1>Actually Fair</h1>
+            <p>Ops Console</p>
+          </div>
         </div>
-        <SearchBar
-          onPickOrder={(no) => setView({ type: "order", orderNumber: no })}
-          onPickBox={(aft) => setView({ type: "box", aft })}
-        />
-        <div className="spacer" />
-        {me.role === "owner" && (
-          <button
-            className="btn ghost"
-            disabled={syncShopify.isPending}
-            title={syncStatus?.shopify?.last_success_at ? `Last synced ${new Date(syncStatus.shopify.last_success_at).toLocaleString()}` : "Never synced"}
-            onClick={() => syncShopify.mutate()}
-          >
-            {syncShopify.isPending ? "Syncing…" : "Sync Shopify"}
-          </button>
-        )}
-        {(me.role === "owner" || me.role === "ops") && (
-          <button className="btn ghost" onClick={() => setNewBoxOpen(true)}>
-            New box <span className="mono faint">n</span>
-          </button>
-        )}
-        <div className="who">
-          <span className="avatar">{me.full_name.slice(0, 1).toUpperCase()}</span>
-          <span className="dim">{me.full_name}</span>
-          <button className="btn ghost" onClick={logout} style={{ padding: "4px 8px" }}>
-            Sign out
-          </button>
-        </div>
-      </header>
+        {NAV.map((group) => (
+          <div className="navgroup" key={group.label}>
+            <div className="navlabel">{group.label}</div>
+            {group.groups.map((item) => (
+              <button
+                key={item.section}
+                className={`navitem ${section === item.section ? "active" : ""}`}
+                onClick={() => setSection(item.section)}
+              >
+                <span aria-hidden>{item.icon}</span> {item.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </aside>
 
-      <ConsolidationStrip />
+      <div className="main">
+        <header>
+          <SearchBar onPickOrder={pickOrder} onPickBox={pickBox} />
+          <div className="spacer" />
+          {me.role === "owner" && (
+            <button
+              className="btn ghost"
+              disabled={syncShopify.isPending}
+              title={syncStatus?.shopify?.last_success_at ? `Last synced ${new Date(syncStatus.shopify.last_success_at).toLocaleString()}` : "Never synced"}
+              onClick={() => syncShopify.mutate()}
+            >
+              {syncShopify.isPending ? "Syncing…" : "Sync Shopify"}
+            </button>
+          )}
+          {section === "batches" && (me.role === "owner" || me.role === "ops") && (
+            <button className="btn ghost" onClick={() => setNewBoxOpen(true)}>
+              New box <span className="mono faint">n</span>
+            </button>
+          )}
+          <div className="who">
+            <span className="avatar">{me.full_name.slice(0, 1).toUpperCase()}</span>
+            <span className="dim">{me.full_name}</span>
+            <button className="btn ghost" onClick={logout} style={{ padding: "4px 8px" }}>
+              Sign out
+            </button>
+          </div>
+        </header>
 
-      <main>
-        <BoxListAside
-          current={view?.type === "box" ? view.aft : null}
-          onSelect={(aft) => setView({ type: "box", aft })}
-          filter={filter}
-          onFilterChange={setFilter}
-        />
-        <section className="detail">
-          {view === null && (
-            <div className="empty">
-              <h3>Pick a box to get started</h3>
-              <p>Select a box from the list, or search for an order, customer, phone number, AWB, or AFT number above.</p>
+        <ConsolidationStrip />
+
+        <div className="content">
+          {section === "batches" ? (
+            <div className="split">
+              <BoxListAside
+                current={view?.type === "box" ? view.aft : null}
+                onSelect={pickBox}
+                filter={filter}
+                onFilterChange={setFilter}
+              />
+              <section className="detail">
+                {view === null && (
+                  <div className="empty">
+                    <h3>Pick a box to get started</h3>
+                    <p>Select a box from the list, or search for an order, customer, phone number, AWB, or AFT number above.</p>
+                  </div>
+                )}
+                {view?.type === "box" && (
+                  <BoxDetailView aft={view.aft} onBack={() => setView(null)} onSelectOrder={pickOrder} />
+                )}
+                {view?.type === "order" && (
+                  <OrderDetailView orderNumber={view.orderNumber} onSelectBox={pickBox} me={me} />
+                )}
+              </section>
             </div>
+          ) : (
+            <section className="detail">
+              <div className="empty">
+                <h3>{COMING_SOON[section].title}</h3>
+                <p>{COMING_SOON[section].body}</p>
+              </div>
+            </section>
           )}
-          {view?.type === "box" && (
-            <BoxDetailView
-              aft={view.aft}
-              onBack={() => setView(null)}
-              onSelectOrder={(no) => setView({ type: "order", orderNumber: no })}
-            />
-          )}
-          {view?.type === "order" && (
-            <OrderDetailView orderNumber={view.orderNumber} onSelectBox={(aft) => setView({ type: "box", aft })} me={me} />
-          )}
-        </section>
-      </main>
+        </div>
+      </div>
 
-      <NewBoxDrawer
-        open={newBoxOpen}
-        onClose={() => setNewBoxOpen(false)}
-        onSaved={(box) => setView({ type: "box", aft: box.aft_number })}
-      />
+      <NewBoxDrawer open={newBoxOpen} onClose={() => setNewBoxOpen(false)} onSaved={(box) => pickBox(box.aft_number)} />
     </div>
   );
 }
