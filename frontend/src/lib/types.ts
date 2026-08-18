@@ -262,6 +262,7 @@ export const PIPELINE_STAGES = [
 export interface ControlTowerCard {
   aft_number: string;
   mf_number: string | null;
+  manufacturer: string | null;
   order_count: number;
   amount_paid_inr: string;
   cn_tracking: string | null;

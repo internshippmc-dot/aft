@@ -17,6 +17,7 @@ import { MessagesView } from "./MessagesView";
 import { WorkflowView } from "./WorkflowView";
 import { ControlTowerView } from "./ControlTowerView";
 import { OrdersView } from "./OrdersView";
+import { DashboardView } from "./DashboardView";
 
 type View = { type: "box"; aft: string } | { type: "order"; orderNumber: string } | null;
 type Filter = "all" | "transit" | "queue";
@@ -56,12 +57,8 @@ const NAV: { label: string; groups: { label: string; section: Section; icon: str
   },
 ];
 
-const COMING_SOON: Partial<Record<Section, { title: string; body: string }>> = {
-  dashboard: { title: "Dashboard", body: "A rollup view is on the roadmap — for now, AFT Batches is the working view." },
-};
-
 export function Shell({ me }: { me: Me }) {
-  const [section, setSection] = useState<Section>("batches");
+  const [section, setSection] = useState<Section>("dashboard");
   const [view, setView] = useState<View>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [newBoxOpen, setNewBoxOpen] = useState(false);
@@ -173,7 +170,11 @@ export function Shell({ me }: { me: Me }) {
         <ConsolidationStrip />
 
         <div className="content">
-          {section === "batches" ? (
+          {section === "dashboard" ? (
+            <section className="detail">
+              <DashboardView me={me} onNavigate={setSection} onOpenBox={pickBox} />
+            </section>
+          ) : section === "batches" ? (
             <div className="split">
               <BoxListAside
                 current={view?.type === "box" ? view.aft : null}
@@ -224,16 +225,9 @@ export function Shell({ me }: { me: Me }) {
             <section className="detail">
               <ControlTowerView me={me} onOpenBox={pickBox} />
             </section>
-          ) : section === "orders" ? (
-            <section className="detail">
-              <OrdersView me={me} onSelectOrder={pickOrder} />
-            </section>
           ) : (
             <section className="detail">
-              <div className="empty">
-                <h3>{COMING_SOON[section]!.title}</h3>
-                <p>{COMING_SOON[section]!.body}</p>
-              </div>
+              <OrdersView me={me} onSelectOrder={pickOrder} />
             </section>
           )}
         </div>

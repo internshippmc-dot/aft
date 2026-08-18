@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class ControlTowerCard(BaseModel):
     aft_number: str
     mf_number: str | None
+    manufacturer: str | None
     order_count: int
     amount_paid_inr: Decimal
     cn_tracking: str | None

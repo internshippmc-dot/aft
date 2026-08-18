@@ -69,6 +69,7 @@ def build_card(db: DbSession, box: Box) -> ControlTowerCard:
     return ControlTowerCard(
         aft_number=box.aft_number,
         mf_number=box.mf_number,
+        manufacturer=box.manufacturer,
         order_count=order_count,
         amount_paid_inr=amount_paid,
         cn_tracking=box.cn_tracking,

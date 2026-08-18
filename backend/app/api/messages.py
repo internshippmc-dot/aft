@@ -32,12 +32,15 @@ def _options():
 @router.get("", response_model=list[MessageOut])
 def list_messages(
     order_number: str | None = None,
+    status_filter: str | None = None,
     _user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
     query = select(CustomerMessage).options(*_options()).order_by(CustomerMessage.created_at.desc())
     if order_number:
         query = query.join(Order).where(Order.order_number == order_number)
+    if status_filter:
+        query = query.where(CustomerMessage.status == status_filter)
     return [_out(m) for m in db.scalars(query)]
 
 
