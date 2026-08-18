@@ -16,6 +16,7 @@ import { ResourcesView } from "./ResourcesView";
 import { MessagesView } from "./MessagesView";
 import { WorkflowView } from "./WorkflowView";
 import { ControlTowerView } from "./ControlTowerView";
+import { OrdersView } from "./OrdersView";
 
 type View = { type: "box"; aft: string } | { type: "order"; orderNumber: string } | null;
 type Filter = "all" | "transit" | "queue";
@@ -57,7 +58,6 @@ const NAV: { label: string; groups: { label: string; section: Section; icon: str
 
 const COMING_SOON: Partial<Record<Section, { title: string; body: string }>> = {
   dashboard: { title: "Dashboard", body: "A rollup view is on the roadmap — for now, AFT Batches is the working view." },
-  orders: { title: "All Orders", body: "A full order table is on the roadmap — use search above to jump to a specific order." },
 };
 
 export function Shell({ me }: { me: Me }) {
@@ -223,6 +223,10 @@ export function Shell({ me }: { me: Me }) {
           ) : section === "control" ? (
             <section className="detail">
               <ControlTowerView me={me} onOpenBox={pickBox} />
+            </section>
+          ) : section === "orders" ? (
+            <section className="detail">
+              <OrdersView me={me} onSelectOrder={pickOrder} />
             </section>
           ) : (
             <section className="detail">

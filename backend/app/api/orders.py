@@ -1,19 +1,22 @@
 import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession, selectinload
 
-from app.auth.deps import get_current_user
+from app.audit import record_audit
+from app.auth.deps import get_current_user, require_ops
 from app.config import get_settings
 from app.db import get_db
 from app.domain.box_view import build_eta
+from app.domain.orders import create_order
 from app.domain.stages import BOX_LEGS, STAGE_LABELS, compute_stage, effective_legs
 from app.models.box import Box, BoxItem
+from app.models.customer import Customer
 from app.models.order import Order, OrderItem
 from app.models.user import User
 from app.schemas.common import OrderItemOut, ShipmentOut
-from app.schemas.order import LegTimelineEntry, OrderDetail
+from app.schemas.order import LegTimelineEntry, OrderCreateIn, OrderDetail, OrderListItem
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 settings = get_settings()
@@ -35,6 +38,58 @@ def _find_order(db: DbSession, order_number: str) -> Order:
     if order is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No order {order_number}.")
     return order
+
+
+@router.get("", response_model=list[OrderListItem])
+def list_orders(q: str | None = None, _user: User = Depends(get_current_user), db: DbSession = Depends(get_db)):
+    query = (
+        select(Order)
+        .options(selectinload(Order.items).selectinload(OrderItem.box_item), selectinload(Order.customer))
+        .order_by(Order.placed_at.desc())
+        .limit(500)
+    )
+    if q:
+        needle = f"%{q.strip()}%"
+        query = query.join(Order.customer, isouter=True).where(
+            (Order.order_number.ilike(needle)) | (Customer.full_name.ilike(needle))
+        )
+    out: list[OrderListItem] = []
+    for order in db.scalars(query):
+        box_aft = None
+        for item in order.items:
+            if item.box_item is not None:
+                box_aft = db.get(Box, item.box_item.box_id)
+                box_aft = box_aft.aft_number if box_aft else None
+                break
+        ship = order.ship_address or {}
+        out.append(
+            OrderListItem(
+                order_number=order.order_number,
+                customer_name=order.customer.full_name if order.customer else None,
+                city=ship.get("city"),
+                total_inr=order.total_inr,
+                placed_at=order.placed_at,
+                item_count=len(order.items),
+                box_aft_number=box_aft,
+                source="shopify" if order.shopify_order_id else "manual",
+            )
+        )
+    return out
+
+
+@router.post("", response_model=OrderDetail, status_code=status.HTTP_201_CREATED)
+def create_order_endpoint(
+    body: OrderCreateIn, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    if db.scalar(select(Order).where(Order.order_number == body.order_number)):
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=f"Order {body.order_number} already exists.")
+    order = create_order(db, body)
+    record_audit(
+        db, request, user, "order.create", "order", order.order_number,
+        after={"customer_name": body.customer_name, "item_count": len(body.items)},
+    )
+    db.commit()
+    return get_order(order.order_number, user, db)
 
 
 @router.get("/{order_number}", response_model=OrderDetail)

@@ -36,6 +36,17 @@ class OrderSummary(BaseModel):
     items: list[OrderItemOut]
 
 
+class OrderListItem(BaseModel):
+    order_number: str
+    customer_name: str | None
+    city: str | None
+    total_inr: Decimal | None
+    placed_at: datetime.datetime
+    item_count: int
+    box_aft_number: str | None
+    source: str  # "shopify" | "manual"
+
+
 class LegTimelineEntry(BaseModel):
     leg: str
     label: str

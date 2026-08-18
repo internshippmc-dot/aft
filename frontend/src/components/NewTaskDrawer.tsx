@@ -7,7 +7,15 @@ import { useToast } from "./Toast";
 
 const PRIORITIES = ["High", "Medium", "Low"];
 
-export function NewTaskDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function NewTaskDrawer({
+  open,
+  onClose,
+  prefillEntityId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  prefillEntityId?: string;
+}) {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState("Medium");
   const [dueOn, setDueOn] = useState("");
@@ -22,11 +30,11 @@ export function NewTaskDrawer({ open, onClose }: { open: boolean; onClose: () =>
       setTitle("");
       setPriority("Medium");
       setDueOn("");
-      setEntityId("");
+      setEntityId(prefillEntityId || "");
       setNotes("");
       setError(null);
     }
-  }, [open]);
+  }, [open, prefillEntityId]);
 
   const mutation = useMutation({
     mutationFn: () =>

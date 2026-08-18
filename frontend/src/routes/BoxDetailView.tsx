@@ -7,6 +7,7 @@ import { NewBoxDrawer } from "../components/NewBoxDrawer";
 import { EditBoxDrawer } from "../components/EditBoxDrawer";
 import { LegEntryDrawer } from "../components/LegEntryDrawer";
 import { AssignConsignmentDrawer } from "../components/AssignConsignmentDrawer";
+import { NewTaskDrawer } from "../components/NewTaskDrawer";
 import { fmtDate, inr, daysBetween } from "../lib/format";
 import { etaNote } from "../lib/etaNote";
 
@@ -15,6 +16,7 @@ export function BoxDetailView({ aft, onBack, onSelectOrder }: { aft: string; onB
   const [legOpen, setLegOpen] = useState(false);
   const [consignOpen, setConsignOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
 
   const { data: box, isLoading } = useQuery({
     queryKey: ["box", aft],
@@ -52,6 +54,9 @@ export function BoxDetailView({ aft, onBack, onSelectOrder }: { aft: string; onB
           )}
           <button className="btn ghost" onClick={() => setAttachOpen(true)}>
             Attach orders
+          </button>
+          <button className="btn ghost" onClick={() => setReminderOpen(true)}>
+            + Reminder
           </button>
           <button className="btn ghost" onClick={() => setEditOpen(true)}>
             Edit
@@ -147,6 +152,7 @@ export function BoxDetailView({ aft, onBack, onSelectOrder }: { aft: string; onB
       <EditBoxDrawer open={editOpen} box={box} onClose={() => setEditOpen(false)} />
       <LegEntryDrawer open={legOpen} aftNumber={box.aft_number} trackingId={box.tracking_id} onClose={() => setLegOpen(false)} />
       <AssignConsignmentDrawer open={consignOpen} aftNumber={box.aft_number} onClose={() => setConsignOpen(false)} />
+      <NewTaskDrawer open={reminderOpen} prefillEntityId={box.aft_number} onClose={() => setReminderOpen(false)} />
     </>
   );
 }

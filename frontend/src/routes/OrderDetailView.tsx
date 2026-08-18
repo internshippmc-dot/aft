@@ -7,6 +7,7 @@ import { inr } from "../lib/format";
 import { etaNote } from "../lib/etaNote";
 import { useToast } from "../components/Toast";
 import { QueueMessageDrawer } from "../components/QueueMessageDrawer";
+import { NewTaskDrawer } from "../components/NewTaskDrawer";
 
 export function OrderDetailView({
   orderNumber,
@@ -20,6 +21,7 @@ export function OrderDetailView({
   const toast = useToast();
   const queryClient = useQueryClient();
   const [messageOpen, setMessageOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
     queryFn: () => api.get<OrderDetail>(`/orders/${encodeURIComponent(orderNumber)}`),
@@ -87,6 +89,9 @@ export function OrderDetailView({
           )}
           <button className="btn ghost" onClick={() => setMessageOpen(true)}>
             Queue status message
+          </button>
+          <button className="btn ghost" onClick={() => setReminderOpen(true)}>
+            + Reminder
           </button>
         </div>
       </div>
@@ -171,6 +176,7 @@ export function OrderDetailView({
       </table>
 
       <QueueMessageDrawer open={messageOpen} order={order} onClose={() => setMessageOpen(false)} />
+      <NewTaskDrawer open={reminderOpen} prefillEntityId={order.order_number} onClose={() => setReminderOpen(false)} />
     </>
   );
 }

@@ -278,6 +278,17 @@ export interface ControlTowerCard {
   flag_reason: string | null;
 }
 
+export interface OrderListItem {
+  order_number: string;
+  customer_name: string | null;
+  city: string | null;
+  total_inr: string | null;
+  placed_at: string;
+  item_count: number;
+  box_aft_number: string | null;
+  source: "shopify" | "manual";
+}
+
 export interface Consolidation {
   unassigned_weight_kg: string;
   unassigned_box_count: number;
