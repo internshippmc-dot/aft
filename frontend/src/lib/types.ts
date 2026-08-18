@@ -248,6 +248,36 @@ export interface CustomerMessage {
   sent_at: string | null;
 }
 
+export const PIPELINE_STAGES = [
+  "Manufacturer → Hexalog",
+  "Sitting in Hexalog",
+  "On Flight",
+  "Delhi Warehouse",
+  "In Transit",
+  "Delivered",
+  "Feedback",
+  "Closed",
+] as const;
+
+export interface ControlTowerCard {
+  aft_number: string;
+  mf_number: string | null;
+  order_count: number;
+  amount_paid_inr: string;
+  cn_tracking: string | null;
+  pl_status: string | null;
+  hexalog_arrival: string | null;
+  flight_date: string | null;
+  delhi_arrival: string | null;
+  labels_generated: number;
+  labels_total: number;
+  delivery_pct: number;
+  pipeline_stage: string;
+  next_action: string | null;
+  flagged: boolean;
+  flag_reason: string | null;
+}
+
 export interface Consolidation {
   unassigned_weight_kg: string;
   unassigned_box_count: number;

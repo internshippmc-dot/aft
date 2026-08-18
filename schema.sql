@@ -99,9 +99,18 @@ CREATE TABLE boxes (
     gross_weight_kg NUMERIC(8,3),
     notes           TEXT,
     created_by      BIGINT REFERENCES users(id),
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- China Control Tower
+    mf_number       TEXT,
+    cn_tracking     TEXT,
+    pl_status       TEXT,
+    pipeline_stage  TEXT,
+    next_action     TEXT,
+    flagged         BOOLEAN NOT NULL DEFAULT FALSE,
+    flag_reason     TEXT
 );
 CREATE INDEX ON boxes (consignment_id);
+CREATE INDEX ON boxes (pipeline_stage);
 -- the consolidation queue
 CREATE INDEX boxes_unassigned ON boxes (created_at) WHERE consignment_id IS NULL;
 
