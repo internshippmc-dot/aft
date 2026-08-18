@@ -237,16 +237,6 @@ export interface Resource {
   updated_at: string;
 }
 
-export const MESSAGE_TYPES = [
-  "Factory Dispatch",
-  "China Warehouse",
-  "Flight Update",
-  "Delhi Warehouse",
-  "Tracking Link",
-  "Delivered",
-  "Feedback",
-] as const;
-
 export interface CustomerMessage {
   id: number;
   type: string;

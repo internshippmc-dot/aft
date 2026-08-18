@@ -170,7 +170,7 @@ export function OrderDetailView({
         </tbody>
       </table>
 
-      <QueueMessageDrawer open={messageOpen} orderNumber={order.order_number} onClose={() => setMessageOpen(false)} />
+      <QueueMessageDrawer open={messageOpen} order={order} onClose={() => setMessageOpen(false)} />
     </>
   );
 }
