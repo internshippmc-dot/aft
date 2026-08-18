@@ -1,16 +1,35 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import { OrderDetail } from "../lib/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, ApiError } from "../lib/api";
+import { Me, OrderDetail, Shipment } from "../lib/types";
 import { LegBar } from "../components/LegBar";
 import { inr } from "../lib/format";
 import { etaNote } from "../lib/etaNote";
 import { useToast } from "../components/Toast";
 
-export function OrderDetailView({ orderNumber, onSelectBox }: { orderNumber: string; onSelectBox: (aft: string) => void }) {
+export function OrderDetailView({
+  orderNumber,
+  onSelectBox,
+  me,
+}: {
+  orderNumber: string;
+  onSelectBox: (aft: string) => void;
+  me: Me;
+}) {
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderNumber],
     queryFn: () => api.get<OrderDetail>(`/orders/${encodeURIComponent(orderNumber)}`),
+  });
+
+  const bookShipment = useMutation({
+    mutationFn: () =>
+      api.post<Shipment>(`/integrations/orders/${encodeURIComponent(orderNumber)}/ithink/book`),
+    onSuccess: (shipment) => {
+      queryClient.invalidateQueries({ queryKey: ["order", orderNumber] });
+      toast(shipment.awb ? `Booked with iThink — AWB ${shipment.awb}.` : "Booked with iThink.");
+    },
+    onError: (err) => toast(err instanceof ApiError ? err.message : "Could not book the shipment."),
   });
 
   if (isLoading || !order) return <div className="dim" style={{ padding: 24 }}>Loading…</div>;
@@ -52,6 +71,11 @@ export function OrderDetailView({ orderNumber, onSelectBox }: { orderNumber: str
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          {!order.shipment && (me.role === "owner" || me.role === "ops") && (
+            <button className="btn ghost" disabled={bookShipment.isPending} onClick={() => bookShipment.mutate()}>
+              {bookShipment.isPending ? "Booking…" : "Book with iThink"}
+            </button>
+          )}
           <button className="btn ghost" onClick={() => toast("Hands off to the WhatsApp template engine")}>
             Queue status message
           </button>
@@ -79,6 +103,22 @@ export function OrderDetailView({ orderNumber, onSelectBox }: { orderNumber: str
           <div className="k">Value</div>
           <div className="v">{inr(order.total_inr)}</div>
         </div>
+        {order.shipment && (
+          <>
+            <div className="fact">
+              <div className="k">Courier</div>
+              <div className="v">{order.shipment.courier || "—"}</div>
+            </div>
+            <div className="fact">
+              <div className="k">AWB</div>
+              <div className="v mono">{order.shipment.awb || "—"}</div>
+            </div>
+            <div className="fact">
+              <div className="k">Shipment status</div>
+              <div className="v">{order.shipment.delivered_on ? "Delivered" : order.shipment.status || "Booked"}</div>
+            </div>
+          </>
+        )}
       </div>
 
       {order.box_aft_number ? (

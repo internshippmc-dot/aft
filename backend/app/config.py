@@ -30,6 +30,23 @@ class Settings(BaseSettings):
     # SLA — PRD.md section 7
     sla_days: int = 14
 
+    # Shopify sync — PRD.md F8. Token is minted once via a local OAuth script
+    # (see Shopify-Excel-Exporter) and pasted in here, not obtained by this
+    # app itself — custom app tokens don't expire, no need to run an OAuth
+    # flow inside the production service for a one-time action.
+    shopify_shop: str | None = None
+    shopify_access_token: str | None = None
+    shopify_api_version: str = "2026-01"
+    shopify_sync_interval_seconds: int = 1800
+
+    # iThink Logistics — booking + tracking. pickup/return address ids come
+    # from the merchant's own iThink portal (Settings -> Addresses).
+    ithink_access_token: str | None = None
+    ithink_secret_key: str | None = None
+    ithink_pickup_address_id: str | None = None
+    ithink_return_address_id: str | None = None
+    ithink_tracking_interval_seconds: int = 900
+
     @property
     def cookie_secure(self) -> bool:
         return self.app_env == "production"

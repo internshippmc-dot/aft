@@ -12,7 +12,7 @@ from app.domain.stages import BOX_LEGS, STAGE_LABELS, compute_stage, effective_l
 from app.models.box import Box, BoxItem
 from app.models.order import Order, OrderItem
 from app.models.user import User
-from app.schemas.common import OrderItemOut
+from app.schemas.common import OrderItemOut, ShipmentOut
 from app.schemas.order import LegTimelineEntry, OrderDetail
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -79,6 +79,19 @@ def get_order(order_number: str, _user: User = Depends(get_current_user), db: Db
         OrderItemOut(id=i.id, product_title=i.product_title, colour=i.colour, size=i.size, quantity=i.quantity)
         for i in order.items
     ]
+    shipment = max(order.shipments, key=lambda s: s.id, default=None)
+    shipment_out = (
+        ShipmentOut(
+            id=shipment.id,
+            courier=shipment.courier,
+            awb=shipment.awb,
+            status=shipment.status,
+            handed_over_on=shipment.handed_over_on,
+            delivered_on=shipment.delivered_on,
+        )
+        if shipment
+        else None
+    )
 
     return OrderDetail(
         order_number=order.order_number,
@@ -96,6 +109,7 @@ def get_order(order_number: str, _user: User = Depends(get_current_user), db: Db
         timeline=timeline,
         eta=eta,
         sla_risk=sla_risk,
+        shipment=shipment_out,
     )
 
 

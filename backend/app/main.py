@@ -1,19 +1,55 @@
+import asyncio
 import hashlib
+import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api import admin, auth, boxes, consignments, consolidation, orders, search
+from app.api import admin, auth, boxes, consignments, consolidation, integrations, orders, search
 from app.auth.ratelimit import check_rate_limit
 from app.auth.session import SESSION_COOKIE
 from app.config import get_settings
-from app.db import engine
+from app.db import SessionLocal, engine
+from app.integrations import ithink, shopify
 
 settings = get_settings()
+logger = logging.getLogger("aft.integrations")
 
-app = FastAPI(title="Actually Fair Operations Console", version="0.1.0")
+
+async def _sync_loop(name: str, interval_seconds: int, run_once) -> None:
+    # Never lets one bad cycle kill the loop — failures already land on
+    # sync_state via run_once itself, this is just a last-resort backstop.
+    while True:
+        try:
+            db = SessionLocal()
+            try:
+                await asyncio.to_thread(run_once, db)
+            finally:
+                db.close()
+        except Exception:
+            logger.exception("%s background sync loop raised unexpectedly", name)
+        await asyncio.sleep(interval_seconds)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    tasks = [
+        asyncio.create_task(
+            _sync_loop("shopify", settings.shopify_sync_interval_seconds, shopify.sync_once)
+        ),
+        asyncio.create_task(
+            _sync_loop("ithink_tracking", settings.ithink_tracking_interval_seconds, ithink.track_once)
+        ),
+    ]
+    yield
+    for task in tasks:
+        task.cancel()
+
+
+app = FastAPI(title="Actually Fair Operations Console", version="0.1.0", lifespan=lifespan)
 
 if settings.app_env != "production":
     # Dev only — Vite runs on a different origin. Production serves same-origin (TECH_SPEC.md section 9).
@@ -73,6 +109,7 @@ app.include_router(orders.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 app.include_router(consolidation.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(integrations.router, prefix="/api/v1")
 
 
 @app.get("/")

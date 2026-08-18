@@ -16,3 +16,12 @@ class OrderItemOut(BaseModel):
     colour: str | None
     size: str | None
     quantity: int
+
+
+class ShipmentOut(BaseModel):
+    id: int
+    courier: str | None
+    awb: str | None
+    status: str | None
+    handed_over_on: datetime.date | None
+    delivered_on: datetime.date | None

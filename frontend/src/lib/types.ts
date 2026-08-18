@@ -104,6 +104,15 @@ export interface LegTimelineEntry {
   actual: boolean;
 }
 
+export interface Shipment {
+  id: number;
+  courier: string | null;
+  awb: string | null;
+  status: string | null;
+  handed_over_on: string | null;
+  delivered_on: string | null;
+}
+
 export interface OrderDetail {
   order_number: string;
   customer_name: string | null;
@@ -120,6 +129,19 @@ export interface OrderDetail {
   timeline: LegTimelineEntry[];
   eta: Eta | null;
   sla_risk: boolean;
+  shipment: Shipment | null;
+}
+
+export interface SyncState {
+  cursor_value: string | null;
+  last_success_at: string | null;
+  last_error: string | null;
+}
+
+export interface SyncSummary {
+  created: number;
+  updated: number;
+  error: string | null;
 }
 
 export interface ConsignmentOut {

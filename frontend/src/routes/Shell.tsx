@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Me } from "../lib/types";
-import { api } from "../lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Me, SyncState, SyncSummary } from "../lib/types";
+import { api, ApiError } from "../lib/api";
+import { useToast } from "../components/Toast";
 import { SearchBar } from "../components/SearchBar";
 import { ConsolidationStrip } from "../components/ConsolidationStrip";
 import { BoxListAside } from "../components/BoxListAside";
@@ -17,6 +18,26 @@ export function Shell({ me }: { me: Me }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [newBoxOpen, setNewBoxOpen] = useState(false);
   const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const { data: syncStatus } = useQuery({
+    queryKey: ["integrations", "status"],
+    queryFn: () => api.get<Record<string, SyncState | null>>("/integrations/status"),
+    enabled: me.role === "owner",
+  });
+  const syncShopify = useMutation({
+    mutationFn: () => api.post<SyncSummary>("/integrations/shopify/sync"),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+      if (result.error) {
+        toast(`Shopify sync failed: ${result.error}`);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["boxes"] });
+        toast(`Shopify sync done — ${result.created} new, ${result.updated} updated.`);
+      }
+    },
+    onError: (err) => toast(err instanceof ApiError ? err.message : "Could not run the Shopify sync."),
+  });
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -49,6 +70,16 @@ export function Shell({ me }: { me: Me }) {
           onPickBox={(aft) => setView({ type: "box", aft })}
         />
         <div className="spacer" />
+        {me.role === "owner" && (
+          <button
+            className="btn ghost"
+            disabled={syncShopify.isPending}
+            title={syncStatus?.shopify?.last_success_at ? `Last synced ${new Date(syncStatus.shopify.last_success_at).toLocaleString()}` : "Never synced"}
+            onClick={() => syncShopify.mutate()}
+          >
+            {syncShopify.isPending ? "Syncing…" : "Sync Shopify"}
+          </button>
+        )}
         {(me.role === "owner" || me.role === "ops") && (
           <button className="btn ghost" onClick={() => setNewBoxOpen(true)}>
             New box <span className="mono faint">n</span>
@@ -87,7 +118,7 @@ export function Shell({ me }: { me: Me }) {
             />
           )}
           {view?.type === "order" && (
-            <OrderDetailView orderNumber={view.orderNumber} onSelectBox={(aft) => setView({ type: "box", aft })} />
+            <OrderDetailView orderNumber={view.orderNumber} onSelectBox={(aft) => setView({ type: "box", aft })} me={me} />
           )}
         </section>
       </main>

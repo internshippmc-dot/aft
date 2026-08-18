@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import EtaOut, OrderItemOut
+from app.schemas.common import EtaOut, OrderItemOut, ShipmentOut
 
 
 class OrderItemCreate(BaseModel):
@@ -59,3 +59,4 @@ class OrderDetail(BaseModel):
     timeline: list[LegTimelineEntry]
     eta: EtaOut | None
     sla_risk: bool
+    shipment: ShipmentOut | None
