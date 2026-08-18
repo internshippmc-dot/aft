@@ -11,6 +11,7 @@ import { BoxDetailView } from "./BoxDetailView";
 import { OrderDetailView } from "./OrderDetailView";
 import { PaymentsView } from "./PaymentsView";
 import { ReturnsView } from "./ReturnsView";
+import { TasksView } from "./TasksView";
 
 type View = { type: "box"; aft: string } | { type: "order"; orderNumber: string } | null;
 type Filter = "all" | "transit" | "queue";
@@ -53,7 +54,6 @@ const NAV: { label: string; groups: { label: string; section: Section; icon: str
 const COMING_SOON: Partial<Record<Section, { title: string; body: string }>> = {
   dashboard: { title: "Dashboard", body: "A rollup view is on the roadmap — for now, AFT Batches is the working view." },
   control: { title: "China Control Tower", body: "A kanban-style stage board is on the roadmap." },
-  tasks: { title: "Tasks & Reminders", body: "Coming in a follow-up build." },
   orders: { title: "All Orders", body: "A full order table is on the roadmap — use search above to jump to a specific order." },
   messages: { title: "Customer Messages", body: "Coming in a follow-up build." },
   resources: { title: "Resources & SOPs", body: "Coming in a follow-up build." },
@@ -203,6 +203,10 @@ export function Shell({ me }: { me: Me }) {
           ) : section === "returns" ? (
             <section className="detail">
               <ReturnsView me={me} />
+            </section>
+          ) : section === "tasks" ? (
+            <section className="detail">
+              <TasksView me={me} />
             </section>
           ) : (
             <section className="detail">

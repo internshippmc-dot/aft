@@ -8,6 +8,7 @@ from app.models.audit import AuditLog
 from app.models.plumbing import SheetImport, SyncState
 from app.models.payment import Payment
 from app.models.return_case import ReturnCase
+from app.models.task import Task
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "SyncState",
     "Payment",
     "ReturnCase",
+    "Task",
 ]

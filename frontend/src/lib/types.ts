@@ -213,6 +213,19 @@ export interface ReturnCase {
   updated_at: string;
 }
 
+export interface Task {
+  id: number;
+  title: string;
+  priority: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  due_on: string | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
 export interface Consolidation {
   unassigned_weight_kg: string;
   unassigned_box_count: number;

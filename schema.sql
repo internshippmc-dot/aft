@@ -186,6 +186,22 @@ CREATE TABLE returns (
 CREATE INDEX ON returns (order_id);
 CREATE INDEX ON returns (status);
 
+CREATE TABLE tasks (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    title           TEXT NOT NULL,
+    priority        TEXT NOT NULL DEFAULT 'Medium',   -- High / Medium / Low
+    entity_type     TEXT,                              -- 'order' | 'box' | null
+    entity_id       TEXT,                              -- order_number or aft_number
+    due_on          DATE,
+    status          TEXT NOT NULL DEFAULT 'Open',      -- Open / Done
+    notes           TEXT,
+    created_by      BIGINT REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at    TIMESTAMPTZ
+);
+CREATE INDEX ON tasks (status, due_on);
+CREATE INDEX ON tasks (entity_type, entity_id);
+
 -- ---------------------------------------------------------------- computed
 
 CREATE TABLE eta_snapshots (
