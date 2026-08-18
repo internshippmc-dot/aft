@@ -1,0 +1,28 @@
+# Production reverse proxy — TECH_SPEC.md section 10.
+# Caddy terminates TLS (automatic via Let's Encrypt, using {$DOMAIN}) and
+# serves the built frontend as static files, same-origin with the API.
+# Point DNS at this host before starting — ACME needs it to issue a cert.
+
+{$DOMAIN} {
+	encode gzip
+
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		root * /site
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://cdn.shopify.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+		-Server
+	}
+}

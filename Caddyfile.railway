@@ -1,0 +1,29 @@
+# Production reverse proxy for Railway — adapted from Caddyfile (TECH_SPEC.md
+# section 10). Railway terminates TLS at its edge once a custom domain is
+# attached to this service, so unlike Caddyfile this does its own ACME for
+# nothing: it just serves plain HTTP on Railway's injected $PORT and proxies
+# API traffic to the backend service over Railway's private network.
+
+:{$PORT} {
+	encode gzip
+
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy {$BACKEND_HOST}
+	}
+
+	handle {
+		root * /site
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://cdn.shopify.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+		-Server
+	}
+}

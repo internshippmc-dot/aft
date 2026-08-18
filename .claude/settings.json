@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(mkdir -p /tmp/pw)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(mkdir -p /tmp/pw/shots)",
+      "Bash(node shot.mjs)",
+      "Bash(node shot2.mjs)",
+      "Bash(ls -la /tmp/pw/shots)",
+      "Bash(find /tmp -iname \"*.png\" 2>/dev/null)",
+      "Bash(rm -f /tmp/cookies4.txt)",
+      "Bash(curl -s -c /tmp/cookies4.txt -X POST http://localhost:8000/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"siddharth@actuallyfair.in\",\"password\":\"ChangeMe123!\"}' -o /dev/null)",
+      "Bash(curl -s -b /tmp/cookies4.txt \"http://localhost:8000/api/v1/orders/%23AF1502\")",
+      "Bash(grep -E \"sid|csrf_token\" /tmp/cookies4.txt)",
+      "Read(//tmp/**)"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+# Production "edge" image for Railway: builds the frontend and serves it +
+# proxies /api to the backend service, same-origin — see Caddyfile.railway
+# and README.md "Design choices" for why same-origin matters here (session
+# cookie is host-only, SameSite=Strict, per SECURITY.md).
+
+FROM node:20-slim AS build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+FROM caddy:2-alpine
+COPY --from=build /app/dist /site
+COPY Caddyfile.railway /etc/caddy/Caddyfile

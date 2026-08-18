@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actually Fair — Operations</title>
+<style>
+:root{
+  --paper:#F2F2F0;
+  --surface:#FFFFFF;
+  --ink:#0F1011;
+  --graphite:#6A6D6E;
+  --faint:#9B9E9E;
+  --rule:#D9DAD7;
+  --rule-soft:#E7E8E5;
+  --signal:#D9231E;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--paper);color:var(--ink);
+  font:400 13px/1.45 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:.01em}
+.dim{color:var(--graphite)}
+.faint{color:var(--faint)}
+.eyebrow{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--graphite)}
+
+/* ============================== login ============================== */
+#login{display:grid;grid-template-columns:minmax(340px,42%) 1fr;height:100%}
+.login-form{padding:64px 56px;display:flex;flex-direction:column;justify-content:space-between;background:var(--surface);border-right:1px solid var(--rule)}
+.wordmark{font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+.wordmark span{color:var(--graphite);font-weight:400}
+.login-body{max-width:320px;width:100%}
+.login-body h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-bottom:4px}
+.login-body p.lede{color:var(--graphite);margin-bottom:32px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);margin-bottom:5px}
+.field input{
+  width:100%;padding:9px 10px;background:var(--surface);
+  border:1px solid var(--rule);border-radius:2px;
+}
+.field input:focus{border-color:var(--ink);outline:none}
+.field input.code{font-family:var(--mono);letter-spacing:.4em;font-size:15px}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 14px;border-radius:2px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--surface);font-weight:500;
+}
+.btn:hover{background:#000}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.ghost:hover{border-color:var(--ink)}
+.btn.block{width:100%;justify-content:center;margin-top:6px}
+.login-note{font-size:11px;color:var(--faint);margin-top:18px;border-top:1px solid var(--rule-soft);padding-top:12px}
+.err{color:var(--signal);font-size:12px;margin-top:10px;display:none}
+.err.on{display:block}
+
+.login-art{padding:64px 56px;display:flex;flex-direction:column;justify-content:center;gap:26px}
+.art-legs{max-width:460px}
+.art-cap{font-size:12px;color:var(--graphite);max-width:380px}
+
+/* ============================== legbar ============================== */
+.legbar{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.leg{min-width:0}
+.leg .bar{height:6px;border-radius:1px;background:var(--rule)}
+.leg.done .bar{background:var(--ink)}
+.leg.pred .bar{
+  background:
+    repeating-linear-gradient(45deg,var(--faint) 0 2px,transparent 2px 5px),
+    var(--rule-soft);
+}
+.leg.late .bar{background:var(--signal)}
+.leg .lbl{margin-top:6px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.leg .dt{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+.leg.done .dt{color:var(--ink)}
+.leg.late .dt{color:var(--signal)}
+.legbar.mini{gap:2px}
+.legbar.mini .bar{height:4px}
+.legbar.mini .lbl,.legbar.mini .dt{display:none}
+.legbar.lg .bar{height:9px}
+.legbar.lg .dt{font-size:12px}
+
+/* ============================== app shell ============================== */
+#app{display:none;height:100%;grid-template-rows:auto auto 1fr}
+#app.on{display:grid}
+header{
+  display:flex;align-items:center;gap:18px;
+  padding:0 16px;height:46px;background:var(--surface);border-bottom:1px solid var(--rule);
+}
+.search-wrap{position:relative;flex:1;max-width:520px}
+.search-wrap input{
+  width:100%;padding:6px 10px 6px 28px;border:1px solid var(--rule);
+  border-radius:2px;background:var(--paper);
+}
+.search-wrap input:focus{background:var(--surface);border-color:var(--ink);outline:none}
+.search-wrap .slash{
+  position:absolute;right:8px;top:6px;font-family:var(--mono);font-size:11px;
+  color:var(--faint);border:1px solid var(--rule);border-radius:2px;padding:0 4px;
+}
+.search-wrap .mag{position:absolute;left:9px;top:7px;color:var(--faint);font-size:12px}
+.results{
+  position:absolute;top:34px;left:0;right:0;background:var(--surface);
+  border:1px solid var(--ink);border-radius:2px;z-index:40;display:none;max-height:60vh;overflow:auto;
+}
+.results.on{display:block}
+.results .grp{padding:6px 10px 3px;border-top:1px solid var(--rule-soft)}
+.results .grp:first-child{border-top:none}
+.res{display:flex;justify-content:space-between;gap:12px;padding:6px 10px;width:100%;text-align:left}
+.res:hover,.res.sel{background:var(--paper)}
+.spacer{flex:1}
+.who{display:flex;align-items:center;gap:8px;font-size:12px}
+.avatar{width:22px;height:22px;border-radius:2px;background:var(--ink);color:var(--surface);
+  display:grid;place-items:center;font-size:10px;font-weight:600}
+
+/* consolidation strip */
+.strip{display:flex;align-items:center;gap:20px;padding:8px 16px;background:var(--surface);
+  border-bottom:1px solid var(--rule);font-size:12px;flex-wrap:wrap}
+.gauge{width:150px;height:6px;background:var(--rule-soft);border-radius:1px;position:relative;overflow:hidden}
+.gauge i{display:block;height:100%;background:var(--ink)}
+.gauge.short i{background:var(--signal)}
+.strip b{font-weight:600;font-family:var(--mono);font-size:12px}
+
+main{display:grid;grid-template-columns:288px 1fr;min-height:0}
+aside{border-right:1px solid var(--rule);background:var(--surface);overflow:auto;min-height:0}
+.aside-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--surface);z-index:2}
+.tabs{display:flex;gap:2px}
+.tab{padding:3px 7px;border-radius:2px;font-size:11px;color:var(--graphite);border:1px solid transparent}
+.tab.on{background:var(--ink);color:var(--surface)}
+.boxrow{display:block;width:100%;text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-soft)}
+.boxrow:hover{background:var(--paper)}
+.boxrow.on{background:var(--paper);box-shadow:inset 2px 0 0 var(--ink)}
+.boxrow .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.boxrow .aft{font-family:var(--mono);font-size:12px;font-weight:600}
+.boxrow .meta{font-size:11px;color:var(--graphite)}
+
+section.detail{overflow:auto;min-height:0;padding:20px 24px 60px}
+.crumb{font-size:11px;color:var(--graphite);margin-bottom:14px}
+.h-row{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+h2.title{font-size:19px;font-weight:600;letter-spacing:-.01em;font-family:var(--mono)}
+.sub{color:var(--graphite);margin-top:3px;font-size:12px}
+.facts{display:flex;gap:26px;flex-wrap:wrap;margin:18px 0 22px;padding:14px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.fact .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--graphite);margin-bottom:3px}
+.fact .v{font-family:var(--mono);font-size:14px}
+.fact .v.warn{color:var(--signal)}
+.panel-legs{margin:22px 0 26px;max-width:620px}
+.eta-note{margin-top:12px;font-size:12px;color:var(--graphite);border-left:2px solid var(--rule);padding-left:10px}
+.eta-note.warn{border-left-color:var(--signal);color:var(--ink)}
+
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--graphite);
+  font-weight:500;padding:0 10px 7px 0;border-bottom:1px solid var(--rule)}
+td{padding:8px 10px 8px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top;height:32px}
+tr.clickable:hover td{background:var(--surface)}
+tbody tr.clickable{cursor:pointer}
+td.num,th.num{text-align:right;padding-right:0;font-family:var(--mono);font-size:12px}
+.pill{display:inline-block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--rule);border-radius:2px;padding:1px 5px;color:var(--graphite)}
+.pill.red{border-color:var(--signal);color:var(--signal)}
+.pill.solid{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+.empty{padding:40px 0;max-width:420px}
+.empty h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.empty p{color:var(--graphite);margin-bottom:14px}
+
+/* entry panel */
+.scrim{position:fixed;inset:0;background:rgba(15,16,17,.28);display:none;z-index:50}
+.scrim.on{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:var(--surface);
+  border-left:1px solid var(--ink);z-index:51;transform:translateX(100%);transition:transform .16s ease;
+  display:flex;flex-direction:column}
+.drawer.on{transform:none}
+@media (prefers-reduced-motion:reduce){.drawer{transition:none}}
+.drawer header{border-bottom:1px solid var(--rule);justify-content:space-between}
+.drawer .body{padding:18px 20px;overflow:auto;flex:1}
+.drawer .foot{padding:14px 20px;border-top:1px solid var(--rule);display:flex;gap:8px;justify-content:flex-end}
+.hint{font-size:11px;color:var(--faint);margin-top:4px}
+textarea{width:100%;min-height:74px;padding:8px 10px;border:1px solid var(--rule);border-radius:2px;
+  font-family:var(--mono);font-size:12px;resize:vertical}
+textarea:focus{border-color:var(--ink);outline:none}
+.toast{position:fixed;left:16px;bottom:16px;background:var(--ink);color:var(--surface);
+  padding:9px 13px;border-radius:2px;font-size:12px;z-index:60;display:none}
+.toast.on{display:block}
+
+@media (max-width:860px){
+  #login{grid-template-columns:1fr}
+  .login-art{display:none}
+  main{grid-template-columns:1fr}
+  aside{display:none}
+  aside.mobile-on{display:block}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ LOGIN ============================ -->
+<div id="login">
+  <div class="login-form">
+    <div class="wordmark">Actually Fair <span>/ Operations</span></div>
+
+    <div class="login-body">
+      <div id="step1">
+        <h1>Sign in</h1>
+        <p class="lede">Internal console. Access is logged.</p>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="username" value="siddharth@actuallyfair.in">
+        </div>
+        <div class="field">
+          <label for="pw">Password</label>
+          <input id="pw" type="password" autocomplete="current-password" value="••••••••••••">
+        </div>
+        <button class="btn block" onclick="toStep2()">Continue</button>
+        <p class="err" id="err1">That email and password combination did not match. Two attempts left before a 15 minute lock.</p>
+      </div>
+
+      <div id="step2" style="display:none">
+        <h1>Verification code</h1>
+        <p class="lede">Enter the six digit code from your authenticator.</p>
+        <div class="field">
+          <label for="code">Code</label>
+          <input id="code" class="code" inputmode="numeric" maxlength="6" placeholder="000000">
+        </div>
+        <button class="btn block" onclick="signIn()">Sign in</button>
+        <button class="btn ghost block" onclick="toStep1()">Use a recovery code</button>
+        <p class="err" id="err2">Code did not verify. Check that your device clock is correct.</p>
+      </div>
+
+      <p class="login-note">Sessions end after 60 minutes idle or 12 hours total. Signing in on a new device ends the previous session.</p>
+    </div>
+
+    <div class="faint" style="font-size:11px">Actually Fair Technologies Pvt Ltd · Mulund, Mumbai</div>
+  </div>
+
+  <div class="login-art">
+    <div class="eyebrow">Factory to Delhi</div>
+    <div class="art-legs">
+      <div class="legbar lg">
+        <div class="leg done"><div class="bar"></div><div class="lbl">Dispatch</div><div class="dt">04 Aug</div></div>
+        <div class="leg done"><div class="bar"></div><div class="lbl">CN warehouse</div><div class="dt">06 Aug</div></div>
+        <div class="leg done"><div class="bar"></div><div class="lbl">Flight</div><div class="dt">09 Aug</div></div>
+        <div class="leg pred"><div class="bar"></div><div class="lbl">Delhi</div><div class="dt">13–15 Aug</div></div>
+      </div>
+    </div>
+    <p class="art-cap">Four legs, one box, and every order inside it. Solid means it happened. Hatched means the console is estimating from the last twenty shipments.</p>
+  </div>
+</div>
+
+<!-- ============================ APP ============================ -->
+<div id="app">
+  <header>
+    <div class="wordmark">Actually Fair <span>/ Ops</span></div>
+    <div class="search-wrap">
+      <span class="mag">⌕</span>
+      <input id="q" placeholder="Order no, customer, phone, AWB, or AFT box" autocomplete="off"
+             oninput="runSearch(this.value)" onfocus="runSearch(this.value)">
+      <span class="slash">/</span>
+      <div class="results" id="results"></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn ghost" onclick="openDrawer()">New box <span class="mono faint">n</span></button>
+    <div class="who"><span class="avatar">S</span><span class="dim">Siddharth</span></div>
+  </header>
+
+  <div class="strip">
+    <span class="eyebrow">Consolidation queue</span>
+    <span><b id="qWeight">7.4</b> kg unassigned across <b id="qBoxes">3</b> boxes</span>
+    <div class="gauge short" title="Against the 10 kg Hexalog minimum"><i style="width:74%"></i></div>
+    <span class="dim">2.6 kg short of the 10 kg chargeable minimum. Shipping now bills for 10 kg regardless.</span>
+  </div>
+
+  <main>
+    <aside id="aside">
+      <div class="aside-head">
+        <div class="tabs">
+          <button class="tab on" data-f="all" onclick="setFilter('all',this)">All</button>
+          <button class="tab" data-f="transit" onclick="setFilter('transit',this)">In transit</button>
+          <button class="tab" data-f="queue" onclick="setFilter('queue',this)">Queue</button>
+        </div>
+        <span class="mono faint" id="boxCount"></span>
+      </div>
+      <div id="boxList"></div>
+    </aside>
+
+    <section class="detail" id="detail"></section>
+  </main>
+</div>
+
+<!-- ============================ DRAWER ============================ -->
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer" role="dialog" aria-label="New box">
+  <header>
+    <strong>New box</strong>
+    <button class="btn ghost" onclick="closeDrawer()">Close</button>
+  </header>
+  <div class="body">
+    <div class="field">
+      <label for="dAft">AFT number</label>
+      <input id="dAft" class="mono" placeholder="AFT-0236">
+      <p class="hint">Uppercased on save. An existing number opens that box instead of creating a duplicate.</p>
+    </div>
+    <div class="field">
+      <label for="dTrack">Tracking ID</label>
+      <input id="dTrack" class="mono" placeholder="HXL-772109">
+      <p class="hint">Leave blank until Hexalog issues one. The box waits in the consolidation queue.</p>
+    </div>
+    <div class="field">
+      <label for="dWeight">Gross weight (kg)</label>
+      <input id="dWeight" class="mono" placeholder="3.20">
+    </div>
+    <div class="field">
+      <label for="dDate">Dispatched from manufacturer</label>
+      <input id="dDate" type="date" class="mono">
+    </div>
+    <div class="field">
+      <label for="dOrders">Orders in this box</label>
+      <textarea id="dOrders" placeholder="#AF1482&#10;#AF1483&#10;#AF1490"></textarea>
+      <p class="hint">One per line, or paste comma separated. Orders already assigned elsewhere are reported back with the box they sit in.</p>
+    </div>
+  </div>
+  <div class="foot">
+    <button class="btn ghost" onclick="closeDrawer()">Cancel</button>
+    <button class="btn" onclick="saveBox()">Save box</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ------------------------------ demo data ------------------------------ */
+const LEGS = [
+  ["MFG_DISPATCH","Dispatch"],
+  ["CN_WAREHOUSE","CN warehouse"],
+  ["FLIGHT","Flight"],
+  ["DELHI_WAREHOUSE","Delhi"]
+];
+
+const BOXES = [
+  {
+    aft:"AFT-0231", tracking:"HXL-772104", mfr:"Kathy · Yiwu", weight:6.20,
+    legs:{MFG_DISPATCH:"2026-08-01",CN_WAREHOUSE:"2026-08-03",FLIGHT:"2026-08-06",DELHI_WAREHOUSE:"2026-08-09"},
+    orders:[
+      {no:"#AF1442",name:"Ananya Rao",phone:"+919820114455",city:"Pune",total:4190,placed:"2026-07-29",
+       items:[{t:"Scallop Court Set",c:"Sage",s:"M",q:1},{t:"Daily Track Set",c:"Black",s:"M",q:1}]},
+      {no:"#AF1447",name:"Ishaan Mehta",phone:"+919833001299",city:"Mumbai",total:2380,placed:"2026-07-30",
+       items:[{t:"Featherweight Running Set",c:"Slate",s:"L",q:1}]},
+      {no:"#AF1451",name:"Tara Bhatia",phone:"+919711220034",city:"Gurugram",total:5560,placed:"2026-07-30",
+       items:[{t:"Cerine Tote",c:"Tan",s:"—",q:1},{t:"Luna Set",c:"Ivory",s:"S",q:1}]}
+    ]
+  },
+  {
+    aft:"AFT-0232", tracking:"HXL-772104", mfr:"Kathy · Yiwu", weight:5.05,
+    legs:{MFG_DISPATCH:"2026-08-01",CN_WAREHOUSE:"2026-08-03",FLIGHT:"2026-08-06",DELHI_WAREHOUSE:"2026-08-09"},
+    orders:[
+      {no:"#AF1455",name:"Rhea Kulkarni",phone:"+919920778812",city:"Nashik",total:3120,placed:"2026-07-31",
+       items:[{t:"Clubhouse Set",c:"Red",s:"S",q:1}]},
+      {no:"#AF1459",name:"Kabir Sethi",phone:"+919818440021",city:"Delhi",total:2890,placed:"2026-07-31",
+       items:[{t:"Trackline Set",c:"Navy",s:"XL",q:1}]}
+    ]
+  },
+  {
+    aft:"AFT-0234", tracking:"HXL-772107", mfr:"Kathy · Yiwu", weight:8.60,
+    legs:{MFG_DISPATCH:"2026-08-07",CN_WAREHOUSE:"2026-08-09",FLIGHT:"2026-08-12"},
+    eta:{p50:"2026-08-15",p80:"2026-08-17",n:18,conf:"high"},
+    orders:[
+      {no:"#AF1502",name:"Meher Qureshi",phone:"+919867332210",city:"Mumbai",total:6240,placed:"2026-08-02",
+       items:[{t:"Riviera Set",c:"Multi",s:"M",q:1},{t:"Aria Set",c:"Cream",s:"M",q:1}]},
+      {no:"#AF1508",name:"Devansh Iyer",phone:"+919845220017",city:"Bengaluru",total:2450,placed:"2026-08-03",
+       items:[{t:"Céleste Active Set",c:"Navy",s:"L",q:1}]},
+      {no:"#AF1511",name:"Simran Gill",phone:"+919779001188",city:"Chandigarh",total:4980,placed:"2026-08-03",
+       items:[{t:"Portofino Set",c:"Stripe",s:"S",q:1},{t:"Scallop Halter Set",c:"Black",s:"S",q:1}]},
+      {no:"#AF1516",name:"Nikhil Shetty",phone:"+919820665510",city:"Thane",total:2210,placed:"2026-08-04",
+       items:[{t:"Muse Dress",c:"Olive",s:"M",q:1}]}
+    ]
+  },
+  {
+    aft:"AFT-0235", tracking:null, mfr:"Kathy · Yiwu", weight:3.10,
+    legs:{MFG_DISPATCH:"2026-08-11"},
+    eta:{p50:"2026-08-21",p80:"2026-08-24",n:18,conf:"high"},
+    orders:[
+      {no:"#AF1544",name:"Aarohi Nair",phone:"+919846771200",city:"Kochi",total:3390,placed:"2026-08-07",
+       items:[{t:"Butterline Active Set",c:"Blush",s:"M",q:1}]},
+      {no:"#AF1549",name:"Yash Agarwal",phone:"+919831009944",city:"Kolkata",total:2760,placed:"2026-08-08",
+       items:[{t:"Curveline Set",c:"Charcoal",s:"L",q:1}]}
+    ]
+  },
+  {
+    aft:"AFT-0236", tracking:null, mfr:"Kathy · Yiwu", weight:2.40,
+    legs:{MFG_DISPATCH:"2026-08-12"},
+    eta:{p50:"2026-08-22",p80:"2026-08-25",n:18,conf:"high"},
+    orders:[
+      {no:"#AF1560",name:"Priya Deshmukh",phone:"+919921330077",city:"Pune",total:5120,placed:"2026-08-09",
+       items:[{t:"Cerine Tote",c:"Black",s:"—",q:1},{t:"Meridian Set",c:"Brown",s:"M",q:1}]}
+    ]
+  },
+  {
+    aft:"AFT-0237", tracking:null, mfr:"Kathy · Yiwu", weight:1.90,
+    legs:{},
+    orders:[]
+  }
+];
+
+/* ------------------------------ helpers ------------------------------ */
+const TODAY = new Date("2026-08-14");
+const fmt = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short"}) : "—";
+const inr = n => "₹" + n.toLocaleString("en-IN");
+const days = (a,b) => Math.round((new Date(b)-new Date(a))/864e5);
+function range(a,b){
+  const A=fmt(a), B=fmt(b);
+  return A.slice(3)===B.slice(3) ? A.slice(0,2)+"–"+B : A+" – "+B;
+}
+
+function boxStage(b){
+  if(!b.legs.MFG_DISPATCH) return "Packing";
+  if(b.legs.DELHI_WAREHOUSE) return "Landed";
+  if(b.legs.FLIGHT) return "In the air";
+  if(b.legs.CN_WAREHOUSE) return "CN warehouse";
+  return "Dispatched";
+}
+function isLate(b){
+  if(!b.eta) return false;
+  return new Date(b.eta.p80) < TODAY;
+}
+function oldestOrder(b){
+  if(!b.orders.length) return null;
+  return b.orders.map(o=>o.placed).sort()[0];
+}
+function slaRisk(b){
+  const o = oldestOrder(b);
+  if(!o || !b.eta) return false;
+  return days(o, b.eta.p80) > 14;
+}
+
+function legbar(b, cls=""){
+  const done = LEGS.filter(([k])=>b.legs[k]).length;
+  return `<div class="legbar ${cls}">` + LEGS.map(([k,label],i)=>{
+    let state="", date="—";
+    if(b.legs[k]){ state="done"; date=fmt(b.legs[k]); }
+    else if(i===done && b.eta){ state="pred"; date = range(b.eta.p50, b.eta.p80); }
+    else if(b.eta){ state="pred"; date=""; }
+    if(state==="pred" && isLate(b) && i===LEGS.length-1) state="late";
+    return `<div class="leg ${state}"><div class="bar"></div>
+      <div class="lbl">${label}</div><div class="dt">${date}</div></div>`;
+  }).join("") + `</div>`;
+}
+
+/* ------------------------------ login ------------------------------ */
+function toStep2(){ step1.style.display="none"; step2.style.display="block"; code.focus(); }
+function toStep1(){ step2.style.display="none"; step1.style.display="block"; }
+function signIn(){
+  login.style.display="none";
+  document.getElementById("app").classList.add("on");
+  renderBoxes(); select(BOXES[2].aft);
+  document.getElementById("q").focus();
+}
+document.getElementById("code").addEventListener("keydown", e=>{ if(e.key==="Enter") signIn(); });
+document.getElementById("pw").addEventListener("keydown", e=>{ if(e.key==="Enter") toStep2(); });
+
+/* ------------------------------ box list ------------------------------ */
+let filter="all", current=null;
+function visibleBoxes(){
+  if(filter==="transit") return BOXES.filter(b=>b.legs.MFG_DISPATCH && !b.legs.DELHI_WAREHOUSE);
+  if(filter==="queue")   return BOXES.filter(b=>!b.tracking);
+  return BOXES;
+}
+function setFilter(f, el){
+  filter=f;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  el.classList.add("on");
+  renderBoxes();
+}
+function renderBoxes(){
+  const list = visibleBoxes();
+  document.getElementById("boxCount").textContent = list.length;
+  document.getElementById("boxList").innerHTML = list.map(b=>`
+    <button class="boxrow ${b.aft===current?"on":""}" onclick="select('${b.aft}')">
+      <div class="top">
+        <span class="aft">${b.aft}</span>
+        <span class="meta">${b.orders.length} order${b.orders.length===1?"":"s"} · ${b.weight.toFixed(2)} kg</span>
+      </div>
+      ${legbar(b,"mini")}
+      <div class="meta" style="margin-top:6px;display:flex;justify-content:space-between">
+        <span>${boxStage(b)}${slaRisk(b)?' <span class="pill red">at risk</span>':''}</span>
+        <span class="mono faint">${b.tracking ? b.tracking : "no tracking id"}</span>
+      </div>
+    </button>`).join("");
+}
+
+/* ------------------------------ detail ------------------------------ */
+function select(aft){
+  current=aft; renderBoxes();
+  const b = BOXES.find(x=>x.aft===aft);
+  const d = document.getElementById("detail");
+  if(!b.orders.length){
+    d.innerHTML = `
+      <div class="crumb">Boxes / <span class="mono">${b.aft}</span></div>
+      <h2 class="title">${b.aft}</h2>
+      <div class="sub">${b.mfr} · ${b.weight.toFixed(2)} kg</div>
+      <div class="empty">
+        <h3>No orders attached yet</h3>
+        <p>Attach orders as the packing list comes in. Paste order numbers one per line and the console reports anything already sitting in another box.</p>
+        <button class="btn" onclick="openDrawer('${b.aft}')">Attach orders</button>
+      </div>`;
+    return;
+  }
+  const value = b.orders.reduce((s,o)=>s+o.total,0);
+  const units = b.orders.reduce((s,o)=>s+o.items.reduce((x,i)=>x+i.q,0),0);
+  const oldest = oldestOrder(b);
+  const elapsed = days(oldest, TODAY);
+
+  d.innerHTML = `
+    <div class="crumb">Boxes / <span class="mono">${b.aft}</span></div>
+    <div class="h-row">
+      <div>
+        <h2 class="title">${b.aft}</h2>
+        <div class="sub">${b.mfr} · ${b.tracking ? "Consignment "+b.tracking : "Not yet consigned"}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" onclick="toast('Leg date entry opens here')">Enter leg date</button>
+        <button class="btn ghost" onclick="openDrawer('${b.aft}')">Attach orders</button>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><div class="k">Stage</div><div class="v">${boxStage(b)}</div></div>
+      <div class="fact"><div class="k">Orders</div><div class="v">${b.orders.length}</div></div>
+      <div class="fact"><div class="k">Units</div><div class="v">${units}</div></div>
+      <div class="fact"><div class="k">Gross weight</div><div class="v">${b.weight.toFixed(2)} kg</div></div>
+      <div class="fact"><div class="k">Order value</div><div class="v">${inr(value)}</div></div>
+      <div class="fact"><div class="k">Oldest order</div><div class="v ${elapsed>11?"warn":""}">${elapsed} days</div></div>
+    </div>
+
+    <div class="panel-legs">
+      ${legbar(b,"lg")}
+      ${etaNote(b)}
+    </div>
+
+    <table>
+      <thead><tr>
+        <th style="width:88px">Order</th><th>Customer</th><th>Items</th>
+        <th style="width:96px">Placed</th><th class="num" style="width:90px">Value</th>
+      </tr></thead>
+      <tbody>${b.orders.map(o=>`
+        <tr class="clickable" onclick="showOrder('${o.no}')">
+          <td class="mono">${o.no}</td>
+          <td>${o.name}<div class="faint" style="font-size:11px">${o.city}</div></td>
+          <td>${o.items.map(i=>`${i.t} <span class="dim">${i.c}${i.s!=="—"?" · "+i.s:""}</span>`).join("<br>")}</td>
+          <td class="mono dim">${fmt(o.placed)}</td>
+          <td class="num">${inr(o.total)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+function etaNote(b){
+  if(b.legs.DELHI_WAREHOUSE){
+    const t = days(b.legs.MFG_DISPATCH, b.legs.DELHI_WAREHOUSE);
+    return `<p class="eta-note">Landed in Delhi on ${fmt(b.legs.DELHI_WAREHOUSE)}, ${t} days from manufacturer dispatch. Every order in this box moved to the Delhi warehouse stage.</p>`;
+  }
+  if(!b.eta) return `<p class="eta-note">No dispatch date yet, so there is nothing to estimate from.</p>`;
+  const risk = slaRisk(b);
+  return `<p class="eta-note ${risk?"warn":""}">
+    Delhi arrival estimated ${fmt(b.eta.p50)} to ${fmt(b.eta.p80)}, from ${b.eta.n} recent shipments.
+    ${risk ? "The late end of that range puts the oldest order in this box past the 14 day promise. Worth a heads-up message before the customer asks." : "Inside the 14 day promise for every order in this box."}
+  </p>`;
+}
+
+function showOrder(no){
+  let box, ord;
+  BOXES.forEach(b=>b.orders.forEach(o=>{ if(o.no===no){ box=b; ord=o; }}));
+  const d = document.getElementById("detail");
+  const elapsed = days(ord.placed, TODAY);
+  d.innerHTML = `
+    <div class="crumb"><button class="dim" onclick="select('${box.aft}')" style="text-decoration:underline">Boxes / ${box.aft}</button> / <span class="mono">${ord.no}</span></div>
+    <div class="h-row">
+      <div>
+        <h2 class="title">${ord.no}</h2>
+        <div class="sub">${ord.name} · ${ord.city} · <span class="mono">${ord.phone}</span></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" onclick="toast('Hands off to the WhatsApp template engine')">Queue status message</button>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><div class="k">Placed</div><div class="v">${fmt(ord.placed)}</div></div>
+      <div class="fact"><div class="k">Elapsed</div><div class="v ${elapsed>11?"warn":""}">${elapsed} days</div></div>
+      <div class="fact"><div class="k">Box</div><div class="v">${box.aft}</div></div>
+      <div class="fact"><div class="k">Consignment</div><div class="v">${box.tracking||"—"}</div></div>
+      <div class="fact"><div class="k">Value</div><div class="v">${inr(ord.total)}</div></div>
+    </div>
+
+    <div class="panel-legs">${legbar(box,"lg")}${etaNote(box)}</div>
+
+    <table>
+      <thead><tr><th>Item</th><th style="width:110px">Colour</th><th style="width:70px">Size</th><th class="num" style="width:50px">Qty</th></tr></thead>
+      <tbody>${ord.items.map(i=>`<tr><td>${i.t}</td><td class="dim">${i.c}</td><td class="mono">${i.s}</td><td class="num">${i.q}</td></tr>`).join("")}</tbody>
+    </table>`;
+}
+
+/* ------------------------------ search ------------------------------ */
+function runSearch(q){
+  const box = document.getElementById("results");
+  q = q.trim().toLowerCase();
+  if(!q){ box.classList.remove("on"); return; }
+  const bHits = BOXES.filter(b => b.aft.toLowerCase().includes(q) || (b.tracking||"").toLowerCase().includes(q));
+  const oHits = [];
+  BOXES.forEach(b=>b.orders.forEach(o=>{
+    if(o.no.toLowerCase().includes(q) || o.name.toLowerCase().includes(q) ||
+       o.phone.includes(q) || o.city.toLowerCase().includes(q)) oHits.push({o,b});
+  }));
+  if(!bHits.length && !oHits.length){
+    box.innerHTML = `<div class="grp"><div class="eyebrow">No match</div></div>
+      <div style="padding:6px 10px 12px" class="dim">Nothing matches that. Search by order number, customer name, phone, AWB, or AFT number.</div>`;
+    box.classList.add("on"); return;
+  }
+  let html="";
+  if(oHits.length){
+    html += `<div class="grp"><span class="eyebrow">Orders</span></div>` + oHits.slice(0,6).map(({o,b})=>`
+      <button class="res" onclick="pick('order','${o.no}')">
+        <span><span class="mono">${o.no}</span> · ${o.name}</span>
+        <span class="dim mono">${b.aft}</span></button>`).join("");
+  }
+  if(bHits.length){
+    html += `<div class="grp"><span class="eyebrow">Boxes and consignments</span></div>` + bHits.slice(0,6).map(b=>`
+      <button class="res" onclick="pick('box','${b.aft}')">
+        <span class="mono">${b.aft}</span>
+        <span class="dim">${b.orders.length} orders · ${boxStage(b)}</span></button>`).join("");
+  }
+  box.innerHTML = html; box.classList.add("on");
+}
+function pick(kind,id){
+  document.getElementById("results").classList.remove("on");
+  document.getElementById("q").value="";
+  kind==="order" ? showOrder(id) : select(id);
+}
+document.addEventListener("click", e=>{
+  if(!e.target.closest(".search-wrap")) document.getElementById("results").classList.remove("on");
+});
+
+/* ------------------------------ drawer ------------------------------ */
+function openDrawer(aft){
+  document.getElementById("scrim").classList.add("on");
+  document.getElementById("drawer").classList.add("on");
+  if(aft){ document.getElementById("dAft").value = aft; }
+  setTimeout(()=>document.getElementById(aft?"dOrders":"dAft").focus(),60);
+}
+function closeDrawer(){
+  document.getElementById("scrim").classList.remove("on");
+  document.getElementById("drawer").classList.remove("on");
+}
+function saveBox(){
+  const aft = document.getElementById("dAft").value.trim().toUpperCase();
+  if(!aft){ toast("Enter an AFT number to save the box"); return; }
+  closeDrawer();
+  toast(aft + " saved. Orders attached and logged.");
+}
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("on"), 2600);
+}
+
+/* ------------------------------ keyboard ------------------------------ */
+document.addEventListener("keydown", e=>{
+  if(!document.getElementById("app").classList.contains("on")) return;
+  const typing = /input|textarea/i.test(document.activeElement.tagName);
+  if(e.key==="/" && !typing){ e.preventDefault(); document.getElementById("q").focus(); }
+  if(e.key==="n" && !typing){ e.preventDefault(); openDrawer(); }
+  if(e.key==="Escape"){ closeDrawer(); document.getElementById("results").classList.remove("on"); }
+});
+</script>
+</body>
+</html>

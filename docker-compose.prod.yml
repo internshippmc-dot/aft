@@ -1,0 +1,57 @@
+# Production stack. Differences from docker-compose.yml (dev):
+#   - no bind mounts, no --reload — runs the built image as-is
+#   - db has no published port — only reachable from other containers on this network
+#   - Caddy fronts everything, terminates TLS, serves the pre-built frontend
+#
+# Build the frontend once before starting (see README.md "Deploy to production"):
+#   cd frontend && npm ci && npm run build && cd ..
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aft_console
+      POSTGRES_USER: aft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aft -d aft_console"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://aft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/aft_console
+      APP_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/site:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+frontend/dist/
+*.tsbuildinfo
+*.log
+.DS_Store
+backups/
+*.sql.age
