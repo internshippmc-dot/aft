@@ -1,0 +1,16 @@
+# Static-prototype variant — no /api proxy, since the prototype makes no
+# backend calls at all (everything lives in the browser's own
+# localStorage/IndexedDB/memory, per-visitor, not shared).
+
+:{$PORT} {
+	encode gzip
+
+	root * /site
+	file_server
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+}

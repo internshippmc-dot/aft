@@ -1,0 +1,14 @@
+# Serves the HTML prototype verbatim as the site, no build step, no API.
+# Alternative to Dockerfile.edge — point the Railway edge service's
+# "Dockerfile Path" setting at this file instead to switch which one is
+# live; switching back is a one-setting change, nothing is deleted.
+#
+# The prototype is entirely self-contained (inline <style>/<script>, no
+# external assets), and it's a single-user-per-browser prototype — no
+# shared login, no shared data, no Shopify/iThink integration. Those all
+# still exist and keep running on the backend/Postgres services, just
+# unused while this is what's being served.
+
+FROM caddy:2-alpine
+COPY static-prototype.html /site/index.html
+COPY Caddyfile.static /etc/caddy/Caddyfile
