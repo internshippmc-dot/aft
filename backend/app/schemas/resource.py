@@ -1,6 +1,19 @@
 import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+ALLOWED_URL_SCHEMES = ("http://", "https://", "mailto:")
+
+
+def _reject_unsafe_scheme(value: str | None) -> str | None:
+    # The frontend renders this straight into an <a href="..."> — a
+    # javascript:/data: URL here would be stored XSS against whoever next
+    # clicks the link. Only allow schemes a link is actually meant to carry.
+    if value is None or value == "":
+        return value
+    if not value.lower().startswith(ALLOWED_URL_SCHEMES):
+        raise ValueError(f"URL must start with one of {ALLOWED_URL_SCHEMES}.")
+    return value
 
 
 class ResourceCreate(BaseModel):
@@ -11,6 +24,8 @@ class ResourceCreate(BaseModel):
     description: str | None = None
     process_text: str | None = None
 
+    _validate_url = field_validator("url")(_reject_unsafe_scheme)
+
 
 class ResourceUpdate(BaseModel):
     title: str | None = None
@@ -18,6 +33,8 @@ class ResourceUpdate(BaseModel):
     url: str | None = None
     description: str | None = None
     process_text: str | None = None
+
+    _validate_url = field_validator("url")(_reject_unsafe_scheme)
 
 
 class ResourceOut(BaseModel):

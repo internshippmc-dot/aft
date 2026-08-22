@@ -13184,12 +13184,15 @@ button[onclick^="closeAction23("]{
         "</div>" +
         '<div class="field" style="margin-bottom:11px"><label>Email</label><input id="af29Email" type="email" autocomplete="username"></div>' +
         '<div class="field" style="margin-bottom:15px"><label>Password</label><input id="af29Password" type="password" autocomplete="current-password"></div>' +
+        '<div class="field" id="af29TotpField" style="margin-bottom:15px;display:none">' +
+        '<label>Two-factor code</label><input id="af29Totp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code">' +
+        "</div>" +
         '<div id="af29LoginError" style="color:#b42318;font-size:11px;margin-bottom:11px;display:none"></div>' +
         '<button class="btn primary" id="af29LoginBtn" style="width:100%;justify-content:center">Sign in</button>' +
         "</div></div>"
     );
     document.getElementById("af29LoginBtn").addEventListener("click", doLogin);
-    ["af29Email", "af29Password"].forEach((id) =>
+    ["af29Email", "af29Password", "af29Totp"].forEach((id) =>
       document.getElementById(id).addEventListener("keydown", (e) => {
         if (e.key === "Enter") doLogin();
       })
@@ -13197,9 +13200,13 @@ button[onclick^="closeAction23("]{
     document.getElementById("af29Email").focus();
   }
 
+  const TOTP_REQUIRED_ERROR = "Enter your two-factor authentication code.";
+
   async function doLogin() {
     const email = document.getElementById("af29Email").value.trim();
     const password = document.getElementById("af29Password").value;
+    const totpField = document.getElementById("af29TotpField");
+    const totp_code = document.getElementById("af29Totp").value.trim();
     const errBox = document.getElementById("af29LoginError");
     errBox.style.display = "none";
     if (!email || !password) {
@@ -13208,10 +13215,18 @@ button[onclick^="closeAction23("]{
       return;
     }
     try {
-      await API.post("/auth/login", { email, password });
+      const body = { email, password };
+      if (totp_code) body.totp_code = totp_code;
+      await API.post("/auth/login", body);
       document.getElementById("af29LoginOverlay").remove();
       await boot();
     } catch (e) {
+      if (e.message === TOTP_REQUIRED_ERROR) {
+        totpField.style.display = "block";
+        document.getElementById("af29Totp").focus();
+        errBox.style.display = "none";
+        return;
+      }
       errBox.textContent = e.message || "Login failed";
       errBox.style.display = "block";
     }
@@ -13445,6 +13460,16 @@ button[onclick^="closeAction23("]{
   // RESOURCES (Other Links & SOPs) — full real CRUD, replaces V26's
   // localStorage-backed implementation end to end.
   // =====================================================================
+  // Backend now rejects javascript:/data: URLs on save (see
+  // ResourceCreate/ResourceUpdate in the API), but this guards any resource
+  // saved before that validation existed, or edited directly in the DB.
+  function safeUrl29(v) {
+    const s = String(v == null ? "" : v).trim();
+    if (!s) return "";
+    const lower = s.toLowerCase();
+    if (lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("mailto:")) return s;
+    return "";
+  }
   function esc29(v) {
     return typeof esc === "function" ? esc(v) : String(v == null ? "" : v);
   }
@@ -13474,7 +13499,7 @@ button[onclick^="closeAction23("]{
             '</div></div><span class="pill blue">Link</span></div>' +
             (r.description ? '<div class="resource26-desc">' + esc29(r.description) + "</div>" : "") +
             '<div class="resource26-actions">' +
-            (r.url ? '<a class="primary" href="' + esc29(r.url) + '" target="_blank" rel="noopener">Open Link →</a>' : "") +
+            (safeUrl29(r.url) ? '<a class="primary" href="' + esc29(safeUrl29(r.url)) + '" target="_blank" rel="noopener">Open Link →</a>' : "") +
             '<button onclick="openResourceModalReal(' + r.id + ')">Edit</button>' +
             '<button class="delete" onclick="deleteResourceReal(' + r.id + ')">Delete</button></div></div>'
         )
@@ -13492,7 +13517,7 @@ button[onclick^="closeAction23("]{
             (r.description ? '<div class="resource26-desc">' + esc29(r.description) + "</div>" : "") +
             (r.process_text ? '<div class="sop26-process">' + esc29(r.process_text) + "</div>" : "") +
             '<div class="resource26-actions">' +
-            (r.url ? '<a class="primary" href="' + esc29(r.url) + '" target="_blank" rel="noopener">Open Reference →</a>' : "") +
+            (safeUrl29(r.url) ? '<a class="primary" href="' + esc29(safeUrl29(r.url)) + '" target="_blank" rel="noopener">Open Reference →</a>' : "") +
             '<button onclick="openResourceModalReal(' + r.id + ')">Edit</button>' +
             '<button class="delete" onclick="deleteResourceReal(' + r.id + ')">Delete</button></div></div>'
         )
@@ -14101,6 +14126,103 @@ button[onclick^="closeAction23("]{
   }
 
   // =====================================================================
+  // ACCOUNT SECURITY — two-factor authentication enroll/disable.
+  // Appends a card into Workflow Settings; self-service, any role.
+  // =====================================================================
+  let af29Me = null;
+
+  function ensureSecurityCard() {
+    if (document.getElementById("af29SecurityCard")) return;
+    const settingsSection = document.getElementById("settings");
+    if (!settingsSection) return;
+    settingsSection.insertAdjacentHTML(
+      "beforeend",
+      '<div class="card" id="af29SecurityCard" style="margin-top:16px">' +
+        '<div class="cardhead"><div><h3>Account Security</h3><p>Two-factor authentication for your login.</p></div></div>' +
+        '<div class="cardbody" id="af29SecurityBody"></div>' +
+        "</div>"
+    );
+  }
+
+  function renderSecurityOff() {
+    document.getElementById("af29SecurityBody").innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+      '<span class="pill grey">Two-factor authentication: Off</span>' +
+      "</div>" +
+      '<button class="btn primary small" onclick="af29StartEnroll()">Set Up 2FA</button>' +
+      '<div id="af29EnrollPanel" style="display:none;margin-top:14px"></div>';
+  }
+
+  function renderSecurityOn() {
+    document.getElementById("af29SecurityBody").innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+      '<span class="pill green">Two-factor authentication: On</span>' +
+      "</div>" +
+      '<div class="field" style="max-width:280px;margin-bottom:8px"><label>Current password (to confirm)</label>' +
+      '<input id="af29DisablePw" type="password" autocomplete="current-password"></div>' +
+      '<button class="btn small" style="border-color:#f3c7c4;color:#b42318" onclick="af29Disable()">Disable 2FA</button>' +
+      '<div id="af29SecurityMsg" style="margin-top:8px;font-size:11px"></div>';
+  }
+
+  window.renderSecuritySettings = async function () {
+    ensureSecurityCard();
+    try {
+      af29Me = await API.get("/auth/me");
+    } catch (e) {
+      return;
+    }
+    if (af29Me.totp_enrolled) renderSecurityOn();
+    else renderSecurityOff();
+  };
+
+  window.af29StartEnroll = async function () {
+    const panel = document.getElementById("af29EnrollPanel");
+    try {
+      const res = await API.post("/auth/totp/enroll/start");
+      panel.style.display = "block";
+      panel.innerHTML =
+        '<div class="nextaction" style="margin:0 0 12px">' +
+        "<div class=\"l\">STEP 1 · ADD TO YOUR AUTHENTICATOR APP</div>" +
+        '<div class="v" style="font-size:11px;font-weight:600;margin-top:4px">Scan isn’t available here — in your ' +
+        "authenticator app (Google Authenticator, Authy, 1Password, etc.) choose “Enter a setup key manually” and use:</div>" +
+        '<div style="font-family:monospace;font-size:13px;font-weight:800;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;padding:8px 10px;margin-top:8px;word-break:break-all">' +
+        esc29(res.secret) +
+        "</div></div>" +
+        '<div class="field" style="max-width:220px;margin-bottom:10px"><label>STEP 2 · Enter the 6-digit code it shows</label>' +
+        '<input id="af29ConfirmCode" type="text" inputmode="numeric" placeholder="123456"></div>' +
+        '<button class="btn primary small" onclick="af29ConfirmEnroll()">Confirm & Enable</button>' +
+        '<div id="af29EnrollMsg" style="margin-top:8px;font-size:11px;color:#b42318"></div>';
+    } catch (e) {
+      toast(e.message || "Could not start 2FA enrollment");
+    }
+  };
+
+  window.af29ConfirmEnroll = async function () {
+    const code = document.getElementById("af29ConfirmCode").value.trim();
+    const msg = document.getElementById("af29EnrollMsg");
+    try {
+      await API.post("/auth/totp/enroll/confirm", { code });
+      toast("Two-factor authentication enabled");
+      await window.renderSecuritySettings();
+    } catch (e) {
+      msg.textContent = e.message || "That code didn't work.";
+    }
+  };
+
+  window.af29Disable = async function () {
+    const password = document.getElementById("af29DisablePw").value;
+    const msg = document.getElementById("af29SecurityMsg");
+    try {
+      await API.post("/auth/totp/disable", { password });
+      toast("Two-factor authentication disabled");
+      await window.renderSecuritySettings();
+    } catch (e) {
+      msg.style.color = "#b42318";
+      msg.textContent = e.message || "Could not disable 2FA.";
+    }
+  };
+
+  // =====================================================================
   // BOOT
   // =====================================================================
   async function boot() {
@@ -14110,6 +14232,7 @@ button[onclick^="closeAction23("]{
       wireAddReminderButton();
       if (typeof renderAll === "function") renderAll();
       window.renderResourcesReal();
+      window.renderSecuritySettings();
       toast("Connected to live data");
     } catch (e) {
       toast(e.message || "Could not load live data");

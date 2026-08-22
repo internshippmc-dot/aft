@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session as DbSession, selectinload
 
 from app.api.orders import _find_order
 from app.audit import record_audit
-from app.auth.deps import get_current_user, require_csrf, require_ops
+from app.auth.deps import get_current_user, require_ops
 from app.db import get_db
 from app.models.box import Box
 from app.models.customer_message import CustomerMessage
@@ -64,7 +64,7 @@ def create_message(body: MessageCreate, request: Request, user: User = Depends(r
 @router.patch("/{message_id}/sent", response_model=MessageOut)
 def mark_sent(
     message_id: int, request: Request,
-    user: User = Depends(get_current_user), _csrf: None = Depends(require_csrf), db: DbSession = Depends(get_db),
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
 ):
     message = db.scalar(select(CustomerMessage).where(CustomerMessage.id == message_id).options(*_options()))
     if message is None:

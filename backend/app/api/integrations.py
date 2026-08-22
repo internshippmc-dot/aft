@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session as DbSession
 
 from app.api.orders import _find_order
+from app.audit import record_audit
 from app.auth.deps import require_owner, require_ops
 from app.db import get_db
 from app.integrations import ithink, shopify
@@ -31,17 +32,22 @@ def status_(_user: User = Depends(require_owner), db: DbSession = Depends(get_db
 
 
 @router.post("/shopify/sync", response_model=SyncSummary)
-def sync_shopify(_user: User = Depends(require_owner), db: DbSession = Depends(get_db)):
+def sync_shopify(request: Request, user: User = Depends(require_owner), db: DbSession = Depends(get_db)):
     # sync_once() never raises — including "not configured" — it always
     # records failures on sync_state and returns them in the result dict,
     # since it's also called from the unattended background loop.
     result = shopify.sync_once(db)
+    record_audit(
+        db, request, user, "integrations.shopify_sync", "sync_state", shopify.SYNC_KEY,
+        after={"created": result["created"], "updated": result["updated"], "error": result["error"]},
+    )
+    db.commit()
     return SyncSummary(created=result["created"], updated=result["updated"], error=result["error"])
 
 
 @router.post("/orders/{order_number}/ithink/book", response_model=ShipmentOut)
 def book_ithink_shipment(
-    order_number: str, _user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+    order_number: str, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
 ):
     order = _find_order(db, order_number)
     try:
@@ -51,6 +57,10 @@ def book_ithink_shipment(
     except Exception as exc:  # noqa: BLE001 — surface the real iThink error to the operator
         db.rollback()
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    record_audit(
+        db, request, user, "integrations.ithink_book", "shipment", str(shipment.id),
+        after={"order_number": order.order_number, "courier": shipment.courier, "awb": shipment.awb},
+    )
     db.commit()
     return ShipmentOut(
         id=shipment.id,

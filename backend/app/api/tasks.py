@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
 from app.audit import record_audit
-from app.auth.deps import get_current_user, require_csrf, require_ops
+from app.auth.deps import get_current_user, require_ops
 from app.db import get_db
 from app.models.task import Task
 from app.models.user import User
@@ -50,7 +50,7 @@ def create_task(body: TaskCreate, request: Request, user: User = Depends(require
 @router.patch("/{task_id}/complete", response_model=TaskOut)
 def complete_task(
     task_id: int, request: Request,
-    user: User = Depends(get_current_user), _csrf: None = Depends(require_csrf), db: DbSession = Depends(get_db),
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
 ):
     task = db.get(Task, task_id)
     if task is None:
