@@ -536,39 +536,16 @@ const stages = [
   'Batch Created','Sheet Sent','Paid','Manufacturer → Hexalog','At Hexalog','Flight Planned','China → India','Delhi Warehouse','Last Mile','Delivered'
 ];
 
-let batches = [
- {aft:'AFT 43',created:'2026-08-12',orders:18,units:23,payment:'Paid',paymentDate:'2026-08-13',dispatch:'2026-08-14',tracking:'SF-CN-438211',stage:'Manufacturer → Hexalog',days:1,next:'Track China domestic shipment',eta:'17–18 Aug',flight:'—',delivery:0,health:'active',box:'Box image uploaded'},
- {aft:'AFT 42',created:'2026-08-10',orders:14,units:17,payment:'Paid',paymentDate:'2026-08-11',dispatch:'2026-08-12',tracking:'SF-CN-422984',stage:'At Hexalog',days:1,next:'Send packing list today',eta:'Reached 14 Aug',flight:'18 Aug',delivery:0,health:'overdue',box:'Box image uploaded'},
- {aft:'AFT 41',created:'2026-08-08',orders:21,units:26,payment:'Paid',paymentDate:'2026-08-09',dispatch:'2026-08-10',tracking:'SF-CN-411772',stage:'Flight Planned',days:2,next:'Confirm flight on 15 Aug',eta:'—',flight:'15 Aug',delivery:0,health:'active',box:'Box image uploaded'},
- {aft:'AFT 40',created:'2026-08-05',orders:16,units:19,payment:'Paid',paymentDate:'2026-08-06',dispatch:'2026-08-07',tracking:'SF-CN-400519',stage:'China → India',days:3,next:'Wait for Delhi arrival',eta:'Delhi 16–17 Aug',flight:'11 Aug',delivery:0,health:'active',box:'Box image uploaded'},
- {aft:'AFT 39',created:'2026-08-02',orders:12,units:15,payment:'Paid',paymentDate:'2026-08-03',dispatch:'2026-08-04',tracking:'SF-CN-399184',stage:'Delhi Warehouse',days:1,next:'Generate 3 missing AWBs',eta:'Reached 13 Aug',flight:'8 Aug',delivery:25,health:'active',box:'Box image uploaded'},
- {aft:'AFT 38',created:'2026-07-30',orders:19,units:22,payment:'Paid',paymentDate:'2026-07-31',dispatch:'2026-08-01',tracking:'SF-CN-381144',stage:'Last Mile',days:2,next:'Monitor 2 delayed deliveries',eta:'—',flight:'6 Aug',delivery:68,health:'active',box:'Box image uploaded'},
- {aft:'AFT 37',created:'2026-07-27',orders:11,units:13,payment:'Paid',paymentDate:'2026-07-28',dispatch:'2026-07-29',tracking:'SF-CN-371180',stage:'Last Mile',days:4,next:'Follow up 1 failed delivery',eta:'—',flight:'3 Aug',delivery:91,health:'overdue',box:'Box image uploaded'},
-];
+// All demo/sample records removed — batches, orders, tasks, messages,
+// payments and returns are loaded for real from the backend (see the V29
+// script at the end of this file). These start empty so nothing shows
+// before login, and nothing demo-flavoured shows if the backend is ever
+// briefly unreachable.
+let batches = [];
 
-let orders = [
- {id:'#2220',name:'R. Arora',phone:'••••22036',product:'Aurelia Ensemble Top',variant:'#c2d5ec / M',aft:null,status:'Confirmed · Ready to batch',last:'Confirmation acknowledged',awb:'—',split:false,delivered:false},
- {id:'#2219',name:'H. Shaikh',phone:'••••6317',product:'Atlas Polarized Sunglasses',variant:'Brown',aft:null,status:'Confirmed · Ready to batch',last:'Confirmation acknowledged',awb:'—',split:false,delivered:false},
- {id:'#2218',name:'S. K.',phone:'••••53100',product:'Elevate Active Jacket',variant:'#583e35 / S',aft:null,status:'Confirmed · Ready to batch',last:'Confirmation acknowledged',awb:'—',split:false,delivered:false},
- {id:'#2217',name:'A. B.',phone:'••••5264',product:'Courtline Dress',variant:'#6e7b8b / L',aft:null,status:'Confirmation pending',last:'Order confirmation sent',awb:'—',split:false,delivered:false},
- {id:'#2216',name:'S. Jain',phone:'••••55028',product:'Elevate Active Jacket',variant:'Black / XL',aft:null,status:'Confirmed · Ready to batch',last:'Confirmation acknowledged',awb:'—',split:false,delivered:false},
- {id:'#2197',name:'S. S.',phone:'••••2882',product:'Elevate Active Jacket',variant:'White / XL',aft:'AFT 43',status:'Left manufacturer',last:'Factory dispatch pending',awb:'—',split:false,delivered:false},
- {id:'#2192',name:'L. D.',phone:'••••6110',product:'Velocity Set (2 items)',variant:'Brown / M',aft:'AFT 42',status:'China warehouse',last:'Factory dispatch ✓',awb:'—',split:false,delivered:false},
- {id:'#2187',name:'K. P.',phone:'••••8305',product:'Elevate Active Jacket ×3',variant:'Mixed / XXL',aft:'AFT 41',status:'Flight planned',last:'China warehouse ✓',awb:'—',split:true,delivered:false},
- {id:'#2186',name:'S. Datta',phone:'••••6955',product:'Elevate Active Jacket',variant:'Navy / L',aft:'AFT 40',status:'On the way to India',last:'Flight update ✓',awb:'—',split:false,delivered:false},
- {id:'#2184',name:'S. B.',phone:'••••2655',product:'Velora + Cloudline',variant:'Mixed / L',aft:'AFT 39',status:'India warehouse',last:'Delhi update ✓',awb:'—',split:false,delivered:false},
- {id:'#2178',name:'P. M.',phone:'••••4821',product:'Asyme Seamless Set',variant:'Beige / M',aft:'AFT 38',status:'Last mile',last:'Tracking link ✓',awb:'DTDC829184',split:false,delivered:false},
- {id:'#2171',name:'M. S.',phone:'••••7112',product:'Elevate Active Jacket',variant:'Black / M',aft:'AFT 37',status:'Last mile delayed',last:'Tracking link ✓',awb:'BLUEDART331882',split:false,delivered:false},
-];
+let orders = [];
 
-let tasks = [
- {id:1,priority:'High',title:'Send packing list for AFT 42',entity:'AFT 42',due:'Today',date:'2026-08-14',type:'Automatic · China Agent',status:'Open',bucket:'today'},
- {id:2,priority:'High',title:'Generate 3 missing last-mile AWBs',entity:'AFT 39',due:'Today',date:'2026-08-14',type:'Automatic · India',status:'Open',bucket:'today'},
- {id:3,priority:'High',title:'Follow up failed delivery',entity:'#2171 · AFT 37',due:'1 day overdue',date:'2026-08-13',type:'Automatic · Last Mile',status:'Open',bucket:'overdue'},
- {id:4,priority:'Medium',title:'Confirm AFT 41 flight',entity:'AFT 41',due:'Tomorrow',date:'2026-08-15',type:'Automatic · Flight',status:'Open',bucket:'upcoming'},
- {id:5,priority:'Medium',title:'AFT 43 expected at Hexalog',entity:'AFT 43',due:'17 Aug',date:'2026-08-17',type:'Automatic · China Transit',status:'Open',bucket:'upcoming'},
- {id:6,priority:'Medium',title:'Check 2 delayed deliveries',entity:'AFT 38',due:'Today',date:'2026-08-14',type:'Automatic · Last Mile',status:'Open',bucket:'today'},
-];
+let tasks = [];
 
 const templates = {
  'Order Confirmed': `Hi {{name}}, this is Juhi from Actually Fair 🤍
@@ -652,19 +629,7 @@ It would really help us make the shopping experience better for you and our futu
 Thank you so much :)`
 };
 
-let messages = [
- {id:1,type:'Factory Dispatch',order:'#2197',name:'S. S.',aft:'AFT 43',status:'Pending'},
- {id:2,type:'Factory Dispatch',order:'#2196',name:'M. T.',aft:'AFT 43',status:'Pending'},
- {id:3,type:'Factory Dispatch',order:'#2195',name:'S. S.',aft:'AFT 43',status:'Pending'},
- {id:4,type:'China Warehouse',order:'#2192',name:'L. D.',aft:'AFT 42',status:'Pending',flight:'18 Aug'},
- {id:5,type:'China Warehouse',order:'#2191',name:'M. R.',aft:'AFT 42',status:'Pending',flight:'18 Aug'},
- {id:6,type:'Flight Update',order:'#2186',name:'S. Datta',aft:'AFT 40',status:'Sent'},
- {id:7,type:'Delhi Warehouse',order:'#2184',name:'S. B.',aft:'AFT 39',status:'Pending'},
- {id:8,type:'Tracking Link',order:'#2178',name:'P. M.',aft:'AFT 38',status:'Pending',tracking:'https://track.example/DTDC829184'},
- {id:9,type:'Delivered',order:'#2167',name:'A. R.',aft:'AFT 36',status:'Pending'},
- {id:10,type:'Feedback',order:'#2149',name:'K. S.',aft:'AFT 35',status:'Pending'},
- {id:11,type:'Feedback',order:'#2148',name:'R. P.',aft:'AFT 35',status:'Pending'},
-];
+let messages = [];
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function pillForStage(s){
@@ -977,19 +942,9 @@ renderAll();
     <div class="modalfoot"><button class="btn" onclick="closeModal('returnModal')">Cancel</button><button class="btn primary" onclick="saveReturnV2()">Create Case</button></div>
   </div></div>`);
 
-  // --- Finance data ---
-  window.paymentsV2=[
-    {date:'2026-08-13',type:'Manufacturer',to:'Kathy / Main CN Manufacturer',ref:'MF 43 / AFT 43',amount:48650,by:'Ayushi',method:'Bank Transfer',notes:'Manufacturer payment same day as MF sheet'},
-    {date:'2026-08-11',type:'Manufacturer',to:'Kathy / Main CN Manufacturer',ref:'MF 42 / AFT 42',amount:43200,by:'Ayushi',method:'Bank Transfer',notes:'Manufacturer batch payment'},
-    {date:'2026-08-12',type:'Hexalog',to:'Hexalog',ref:'AFT 40',amount:14200,by:'Ayushi',method:'Bank Transfer',notes:'Cross-border freight'},
-    {date:'2026-08-14',type:'iThink Logistics',to:'iThink Logistics',ref:'AFT 39',amount:3850,by:'Juhi',method:'Wallet',notes:'Last-mile labels'},
-    {date:'2026-08-13',type:'Refund',to:'Customer R. S.',ref:'#2104',amount:2499,by:'Keya',method:'UPI',notes:'Return refund — sizing issue'}
-  ];
-  window.returnsV2=[
-    {id:'RX-014',order:'#2104',customer:'R. S.',type:'Return',reason:'Sizing issue',status:'Refunded',requested:'2026-08-09',next:'Close case'},
-    {id:'RX-015',order:'#2110',customer:'M. K.',type:'Exchange',reason:'Needs L instead of M',status:'Pickup Scheduled',requested:'2026-08-12',next:'Receive item and create replacement'},
-    {id:'RX-016',order:'#2116',customer:'A. P.',type:'Return',reason:'Changed mind',status:'Approved',requested:'2026-08-13',next:'Book reverse pickup'}
-  ];
+  // --- Finance data (populated for real from the backend once V29 boots) ---
+  window.paymentsV2=[];
+  window.returnsV2=[];
 
   window.openPaymentModal=()=>openModal('paymentModal');
   window.openReturnModal=()=>openModal('returnModal');
@@ -1212,17 +1167,17 @@ renderAll();
   batchForm.innerHTML=`
     <div class="field"><label>Internal AFT code</label><input id="newAftCode"></div>
     <div class="field"><label>Manufacturer batch code</label><input id="newMfCode"></div>
-    <div class="field"><label>Manufacturer</label><input id="newBatchManufacturer" value="Kathy / Main CN Manufacturer"></div>
-    <div class="field"><label>Manufacturer amount paid</label><input id="newBatchAmount" type="number" value="48000"></div>
+    <div class="field"><label>Manufacturer</label><input id="newBatchManufacturer" placeholder="Manufacturer name"></div>
+    <div class="field"><label>Manufacturer amount paid</label><input id="newBatchAmount" type="number" placeholder="0"></div>
     <div class="field"><label>MF sheet + payment date</label><input id="newAftDate" type="date"></div>
-    <div class="field"><label>Payment made by</label><input id="newBatchPaidBy" value="Ayushi"></div>`;
+    <div class="field"><label>Payment made by</label><input id="newBatchPaidBy" placeholder="Your name"></div>`;
 
   function openCreateBatchV2(){
     const nums=batches.map(b=>parseInt((b.aft.match(/\d+/)||['0'])[0])).filter(Boolean);
-    const next=Math.max(...nums)+1;
+    const next=nums.length?Math.max(...nums)+1:1;
     document.getElementById('newAftCode').value='AFT '+next;
     document.getElementById('newMfCode').value='MF '+next;
-    document.getElementById('newAftDate').value='2026-08-14';
+    document.getElementById('newAftDate').value=new Date().toISOString().slice(0,10);
     const available=orders.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));
     document.getElementById('unbatchedPicker').innerHTML=available.map((o,i)=>`
       <label class="checkrow"><input type="checkbox" class="batchPick" value="${o.id}" ${i<3?'checked':''}>
@@ -1324,35 +1279,7 @@ renderAll();
     o.orderDate=o.orderDate||m[0];o.paymentType=o.paymentType||m[1];o.notes=o.notes??m[2];
   });
 
-  // AFT 43 should visibly contain its entire 18-order prototype batch, not one sample row.
-  const aft43Ids=['#2197','#2200','#2201','#2202','#2203','#2204','#2205','#2206','#2207','#2208','#2209','#2210','#2211','#2212','#2219','#2220','#2215','#2216'];
-  const aft43Samples={
-    '#2200':['M. Parikh','Elevate Active Jacket','White / M','2026-08-01','Prepaid',''],
-    '#2201':['D. A.','Elevate Active Jacket','Black / XS','2026-08-02','COD',''],
-    '#2202':['S. Sharma','Elevate Active Jacket','Black / M','2026-08-02','Prepaid',''],
-    '#2203':['R. Rawat','Elevate Active Jacket','Black / S','2026-08-03','COD','Customer asked for delivery call before attempt.'],
-    '#2204':['S. Dudhi','Snuggle Set','Beige / M','2026-08-03','COD',''],
-    '#2205':['S. K.','Cloudline Scallop Top','White / L','2026-08-05','Prepaid',''],
-    '#2206':['L. A.','Elevate Active Jacket','Brown / XL','2026-08-05','COD',''],
-    '#2207':['Y. V.','Velora Set','Navy / L','2026-08-05','Prepaid','Two line items in same order.'],
-    '#2208':['N. K.','Rosé Court Dress','Pink / M','2026-08-05','COD',''],
-    '#2209':['E. K.','Elevate Active Jacket','Black / S','2026-08-06','Prepaid',''],
-    '#2210':['U. M.','Classic Sculpt Jacket','L','2026-08-06','COD',''],
-    '#2211':['A. K.','Elevate Active Jacket','Green / M','2026-08-07','Prepaid',''],
-    '#2212':['S. Shah','Elevate Active Jacket','Green / M','2026-08-07','COD',''],
-    '#2215':['S. S.','Butterline Set','Yellow / XS','2026-08-09','Prepaid',''],
-  };
-  aft43Ids.forEach(id=>{
-    let o=orders.find(x=>x.id===id);
-    if(!o){
-      const x=aft43Samples[id]||['Masked Customer','Actually Fair Product','Variant','2026-08-08','Prepaid',''];
-      o={id,name:x[0],phone:'••••••••',product:x[1],variant:x[2],aft:'AFT 43',status:'Manufacturer dispatched',last:'Factory dispatch update due',awb:'—',split:false,delivered:false,orderDate:x[3],paymentType:x[4],notes:x[5]};
-      orders.push(o);
-    }
-    o.aft='AFT 43';o.orderDate=o.orderDate||'2026-08-08';o.paymentType=o.paymentType||'Prepaid';o.notes=o.notes||'';
-  });
-  // Keep package count/range explicit even if there are gaps in sample order numbers.
-  const aft43=batches.find(b=>b.aft==='AFT 43');if(aft43){aft43.orders=18;aft43.orderRange='#2197–#2220';aft43.batchStart='#2197';aft43.batchEnd='#2220';}
+  // (Demo-only AFT 43 sample-order injection removed — real data comes from the backend.)
 
   function expectedStageForDays(days){
     if(days<=0)return {label:'Confirmation',rank:0};
@@ -1993,74 +1920,7 @@ renderAll();
   function esc4(v){return esc(v)}
   function stop4(e){if(e){e.preventDefault();e.stopPropagation();}}
 
-  // ---------- Add substantially more linked sample data ----------
-  const extraOrders=[
-    ['#2215','S. S.','Butterline Set','Yellow / XS','AFT 43','COD','2026-08-09','Customer requested delivery after 20 Aug'],
-    ['#2214','M. Parashar','Butterline Set','Yellow / S','AFT 43','Prepaid','2026-08-09',''],
-    ['#2213','C. Chawla','Ivory Sculpt Set','Black / XS','AFT 43','Prepaid','2026-08-09',''],
-    ['#2211','A. K.','Elevate Active Jacket','Green / M','AFT 43','COD','2026-08-07',''],
-    ['#2210','U. M.','Classic Sculpt Jacket','L','AFT 43','Prepaid','2026-08-06','Size reconfirmed on WhatsApp'],
-    ['#2209','E. K.','Elevate Active Jacket','Black / S','AFT 42','COD','2026-08-06',''],
-    ['#2208','N. K.','Rosé Court Dress','Pink / M','AFT 42','Prepaid','2026-08-05',''],
-    ['#2207','Y. V.','Velora Set','Navy / L','AFT 42','Prepaid','2026-08-05',''],
-    ['#2206','L. P.','Elevate Active Jacket','Brown / XL','AFT 42','COD','2026-08-05',''],
-    ['#2205','S. K.','Cloudline Scallop Top','White / L','AFT 42','Prepaid','2026-08-05',''],
-    ['#2204','S. D.','Snuggle Set','Beige / M','AFT 41','COD','2026-08-03',''],
-    ['#2203','R. R.','Elevate Active Jacket','Black / M','AFT 41','Prepaid','2026-08-03',''],
-    ['#2202','S. Sharma','Elevate Active Jacket','Black / L','AFT 41','Prepaid','2026-08-02',''],
-    ['#2201','D. K.','Elevate Active Jacket','Black / S','AFT 41','COD','2026-08-02','Address reconfirmation pending'],
-    ['#2200','M. P.','Elevate Active Jacket','White / L','AFT 40','Prepaid','2026-08-01',''],
-    ['#2199','S. R.','Elevate Active Jacket','White / XL','AFT 40','Prepaid','2026-08-01',''],
-    ['#2198','H. J.','Elevate Active Jacket','Black / S','AFT 40','COD','2026-08-01',''],
-    ['#2194','B. W.','Mixed Activewear','Mixed / L','AFT 39','COD','2026-07-28',''],
-    ['#2193','V. S.','Everyday Flare Pants','Black / L','AFT 39','COD','2026-07-28',''],
-    ['#2191','M. R.','Olive Backpack','Olive','AFT 39','Prepaid','2026-07-27',''],
-    ['#2190','S. S.','Elevate Active Jacket','Brown / XL','AFT 38','COD','2026-07-24',''],
-    ['#2189','S. M.','Mixed Activewear','Mixed / S','AFT 38','COD','2026-07-24',''],
-    ['#2188','G. A.','Elevate Active Jacket','White / L','AFT 38','Prepaid','2026-07-26',''],
-    ['#2185','H. S.','Elevate Active Jacket','Black / L','AFT 37','COD','2026-07-26',''],
-    ['#2183','A. N.','Arco Bag','Ash Grey','AFT 37','Prepaid','2026-07-23',''],
-  ];
-  extraOrders.forEach((r,i)=>{
-    if(orders.some(o=>o.id===r[0]))return;
-    orders.push({
-      id:r[0],name:r[1],phone:'••••'+String(5200+i).padStart(4,'0'),product:r[2],variant:r[3],
-      aft:r[4],status:'Processing',last:'',awb:'—',split:false,delivered:false,
-      paymentType:r[5],orderDate:r[6],notes:r[7],flagged:false
-    });
-  });
-
-  // Add delivered + feedback historic AFTs so the end-to-end control tower is visible.
-  if(!batches.some(b=>b.aft==='AFT 36')){
-    batches.push({
-      aft:'AFT 36',mf:'MF 36',orderRange:'#2168–#2182',manufacturer:'Kathy / Main CN Manufacturer',
-      amountPaid:38900,paidBy:'Ayushi',created:'2026-07-21',payment:'Paid',paymentDate:'2026-07-21',
-      dispatch:'2026-07-22',tracking:'SF-CN-361779',stage:'Delivered',workflowDay:18,days:0,orders:12,units:15,
-      plStatus:'Sent',next:'Feedback begins 5 days after individual delivery',eta:'Delivered',flight:'27 Jul',delivery:100,health:'active',
-      hexalogArrival:'26 Jul',flightDate:'27 Jul',delhiArrival:'29 Jul',labels:'12 / 12',flagged:false
-    });
-  }
-  if(!batches.some(b=>b.aft==='AFT 35')){
-    batches.push({
-      aft:'AFT 35',mf:'MF 35',orderRange:'#2153–#2167',manufacturer:'Kathy / Main CN Manufacturer',
-      amountPaid:35400,paidBy:'Ayushi',created:'2026-07-18',payment:'Paid',paymentDate:'2026-07-18',
-      dispatch:'2026-07-19',tracking:'SF-CN-351224',stage:'Feedback',workflowDay:23,days:0,orders:11,units:13,
-      plStatus:'Sent',next:'Send / finish feedback messages',eta:'Delivered',flight:'24 Jul',delivery:100,health:'active',
-      hexalogArrival:'23 Jul',flightDate:'24 Jul',delhiArrival:'26 Jul',labels:'11 / 11',flagged:false
-    });
-  }
-  const historic=[
-    ['#2182','N. S.','Nolita Bag','Black','AFT 36','Prepaid','2026-07-22',true,'2026-08-08'],
-    ['#2179','A. P.','Elevate Jacket','Brown / M','AFT 36','COD','2026-07-22',true,'2026-08-09'],
-    ['#2167','A. R.','Cloudline Set','White / M','AFT 35','Prepaid','2026-07-19',true,'2026-08-06'],
-    ['#2164','K. S.','Willow Hobo','Sienna','AFT 35','COD','2026-07-19',true,'2026-08-07']
-  ];
-  historic.forEach((r,i)=>{
-    if(orders.some(o=>o.id===r[0]))return;
-    orders.push({id:r[0],name:r[1],phone:'••••'+(6100+i),product:r[2],variant:r[3],aft:r[4],status:'Delivered',
-      last:'Delivered message ✓',awb:'DEMO'+r[0].slice(1),split:false,delivered:r[7],deliveredDate:r[8],paymentType:r[5],
-      orderDate:r[6],notes:'',flagged:false});
-  });
+  // (Demo-only bulk sample orders + historic AFT 34/35/36 removed — real data comes from the backend.)
 
   // Fill all missing operational fields.
   orders.forEach((o,i)=>{
@@ -5134,62 +4994,7 @@ renderAll();
   function esc15(v){return esc(v)}
   function batch15(o){return batches.find(b=>b.aft===o.aft)}
 
-  /* ---------- Add a Closed AFT + enough orders to demonstrate 50/page ---------- */
-  if(!batches.some(b=>b.aft==='AFT 34')){
-    batches.push({
-      aft:'AFT 34',mf:'MF 34',orderRange:'#2130–#2152',
-      manufacturer:'Kathy / Main CN Manufacturer',
-      amountPaid:33850,paidBy:'Ayushi',
-      created:'2026-07-15',payment:'Paid',paymentDate:'2026-07-15',paymentActualDate:'2026-07-15',
-      sheetSentDate:'2026-07-15',
-      dispatch:'2026-07-16',manufacturerDispatchDate:'2026-07-16',
-      tracking:'SF-CN-341105',trackingReceivedDate:'2026-07-16',
-      plStatus:'Sent',plSentDate:'2026-07-16',
-      hexalogActualDate:'2026-07-20',
-      flightUpdateAskedDate:'2026-07-21',
-      flightDateSharedDate:'2026-07-21',
-      flight:'22 Jul',flightDate:'22 Jul',
-      flightActualDate:'2026-07-22',
-      customsDate:'2026-07-23',
-      delhiActualDate:'2026-07-24',
-      lastMileDispatchDate:'2026-07-25',
-      deliveryCompletedDate:'2026-07-29',
-      stage:'Closed',workflowDay:24,days:0,orders:23,units:27,
-      next:'Closed / archived',eta:'Complete',delivery:100,health:'active',
-      hexalogArrival:'20 Jul',delhiArrival:'24 Jul',labels:'23 / 23',flagged:false
-    });
-  }
-
-  const firstNames15=['Aarav','Meera','Kavya','Rhea','Naina','Ishita','Anaya','Diya','Kiara','Tara','Riya','Neha','Aisha','Maya','Nisha','Sara','Aditi','Reva','Ira','Avni','Myra','Zoya','Veda'];
-  const products15=['Elevate Active Jacket','Butterline Set','Cloudline Set','Nolita Bag','Willow Hobo','Rosé Court Dress','Velora Set'];
-  let nextId15=2152;
-  let idx15=0;
-  while(orders.length<68){
-    const id='#'+nextId15--;
-    if(orders.some(o=>o.id===id))continue;
-    const d=new Date('2026-07-15T00:00:00');
-    d.setDate(d.getDate()+(idx15%5));
-    orders.push({
-      id,
-      name:firstNames15[idx15%firstNames15.length]+' '+String.fromCharCode(65+(idx15%20))+'.',
-      phone:'98'+String(30000000+idx15).slice(-8),
-      product:products15[idx15%products15.length],
-      variant:(idx15%2?'Black / M':'Brown / L'),
-      aft:'AFT 34',
-      status:'Delivered',
-      last:'Feedback complete',
-      awb:'CLOSED'+String(1000+idx15),
-      split:false,
-      delivered:true,
-      deliveredDate:'2026-07-29',
-      feedbackSentDate:'2026-08-03',
-      paymentType:idx15%3===0?'COD':'Prepaid',
-      orderDate:d.toISOString().slice(0,10),
-      notes:'',
-      flagged:false
-    });
-    idx15++;
-  }
+  // (Demo-only AFT 34 + synthetic 68-order padding loop removed — real data comes from the backend.)
 
   /* ---------- Order status -> roadmap completion ---------- */
   const statusMaxIndex15={
@@ -6380,18 +6185,7 @@ renderAll();
   }
 
   /* ---------- Payments: Days + date presets/custom range ---------- */
-  if(typeof paymentsV2!=='undefined'){
-    /* enrich with a few older payments for date filtering */
-    const extraPayments16=[
-      {date:'2026-08-01',type:'Hexalog',to:'Hexalog',ref:'AFT 38',amount:13200,by:'Ayushi',method:'Bank Transfer',notes:'Cross-border freight'},
-      {date:'2026-07-29',type:'iThink Logistics',to:'iThink Logistics',ref:'AFT 37',amount:2980,by:'Juhi',method:'Wallet',notes:'Last-mile labels'},
-      {date:'2026-07-18',type:'Refund',to:'Customer P. K.',ref:'#2088',amount:3499,by:'Keya',method:'UPI',notes:'Return refund'},
-      {date:'2026-06-30',type:'Manufacturer',to:'Kathy / Main CN Manufacturer',ref:'MF 32 / AFT 32',amount:42150,by:'Ayushi',method:'Bank Transfer',notes:'Manufacturer batch payment'}
-    ];
-    extraPayments16.forEach(p=>{
-      if(!paymentsV2.some(x=>x.date===p.date&&x.ref===p.ref&&x.type===p.type))paymentsV2.push(p);
-    });
-  }
+  // (Demo-only extra sample payments removed — real data comes from the backend.)
 
   const paymentsView=document.getElementById('payments');
   if(paymentsView){
