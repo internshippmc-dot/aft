@@ -1,0 +1,13 @@
+# Railway "edge" image for the static-prototype.html variant — same idea as
+# Dockerfile.edge, but serves static-prototype.html (the v28 prototype +
+# real-backend adapter) instead of building the React app. Point Railway's
+# edge/frontend service's "Dockerfile Path" at this file to switch the live
+# UI to this one; switching back to Dockerfile.edge is a one-setting change.
+#
+# Requires the same $BACKEND_HOST env var your existing edge service already
+# has set (the backend service's private-network address, e.g.
+# backend.railway.internal:8000) — this reuses it via Caddyfile.static.railway.
+
+FROM caddy:2-alpine
+COPY static-prototype.html /site/index.html
+COPY Caddyfile.static.railway /etc/caddy/Caddyfile

@@ -1,16 +1,26 @@
-# Static-prototype variant — no /api proxy, since the prototype makes no
-# backend calls at all (everything lives in the browser's own
-# localStorage/IndexedDB/memory, per-visitor, not shared).
+# Static-prototype variant — the prototype now IS the real frontend: it
+# makes real login + data calls to the FastAPI backend at /api/*, same
+# origin, exactly like the React build's Caddyfile does. Session cookies
+# are set on this origin, so /api/* must be proxied here rather than
+# pointed at a different host.
 
 :{$PORT} {
 	encode gzip
 
-	root * /site
-	file_server
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy {$BACKEND_UPSTREAM:backend:8000}
+	}
+
+	handle {
+		root * /site
+		file_server
+	}
 
 	header {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		-Server
 	}
 }

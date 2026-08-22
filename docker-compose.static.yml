@@ -1,0 +1,56 @@
+# Local one-command way to try the exact static-prototype.html UI wired to
+# the real backend — same db/backend as docker-compose.yml, but serves
+# static-prototype.html (via Caddyfile.static) instead of the Vite/React
+# frontend. No TLS/domain needed; plain HTTP on PORT (default 8080).
+#
+#   cp .env.example .env   # if you haven't already
+#   docker compose -f docker-compose.static.yml up --build
+#   open http://localhost:8080
+#
+# Login with the same seeded accounts as docker-compose.yml (see README.md).
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aft_console
+      POSTGRES_USER: aft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    volumes:
+      - db_data_static:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aft -d aft_console"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://aft:${POSTGRES_PASSWORD:-devpassword}@db:5432/aft_console
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  static-console:
+    build:
+      context: .
+      dockerfile: Dockerfile.static
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      BACKEND_UPSTREAM: backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data_static:

@@ -2,6 +2,23 @@
 
 Consignment tracking, order linkage, and data entry. See `PRD.md`, `TECH_SPEC.md`, and `SECURITY.md` for the full specification this build follows.
 
+## Two frontends, one backend
+
+There are now two ways to run the UI against the same FastAPI/Postgres backend:
+
+- **`frontend/`** — the React/TypeScript app described below.
+- **`static-prototype.html`** — the full `actually_fair_logistics_prototype_v28.html` prototype, verbatim, with a real-backend adapter appended as its last `<script>` block (see the big comment at the top of that block for exactly what it does and its known gaps). This is what `Dockerfile.static` + `Caddyfile.static` serve. Try it locally with:
+
+  ```
+  cp .env.example .env   # if you haven't already, and set POSTGRES_PASSWORD
+  docker compose -f docker-compose.static.yml up --build
+  open http://localhost:8080
+  ```
+
+  Log in with the same seeded accounts as the main stack (see the table below). The page gates itself behind real login (`/api/v1/auth/*`) and loads/saves boxes, orders, payments, returns, tasks, messages, and resources for real — nothing in it is mock data once you're past the login screen.
+
+  **Known gaps** (backend has no field/endpoint for these yet, so the control stays visible but says so honestly instead of faking a save): editing an *existing* payment or task's notes, reopening a completed task, manually overriding an order's status (it's derived from its AFT box's stage), and per-order internal notes (kept in this browser's `localStorage` only). A handful of the AFT package's finer sub-milestone dates (sheet-sent, PL-sent, flight-asked vs shared vs actual, customs, last-mile dispatch, delivery-completed, feedback-sent) aren't columns in the database yet either and are also kept local-only per AFT number until that migration is worth doing. File attachments on an AFT package are still IndexedDB-only, same as before.
+
 ## What's implemented in this pass
 
 This is the "core data entry app" slice: boxes, consignments, order assignment, manifest view, leg date entry, ETA prediction, universal search, the consolidation queue, login/roles/audit log. It does **not** yet include Shopify sync or XLSX import (PRD F8/F9) — the database tables for both exist (`sync_state`, `sheet_imports`) so they can be added without a migration. Orders start from the seed script, and can additionally be **quick-created while attaching**: paste an order number that doesn't exist yet (e.g. `#2000`) into a box, and the drawer offers a small create form (customer + items) that creates the order and attaches it in one go.

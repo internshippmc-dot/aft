@@ -1,0 +1,29 @@
+# Production reverse proxy for Railway — static-prototype.html variant.
+# Mirrors Caddyfile.railway (same $PORT / $BACKEND_HOST convention, same
+# TLS-at-Railway-edge assumption) but serves static-prototype.html instead
+# of the React build, and its CSP allows inline scripts: the prototype is
+# ~30 inline <script> blocks with no build step, so `script-src 'self'`
+# alone would silently block all of them and the page would render blank.
+
+:{$PORT} {
+	encode gzip
+
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy {$BACKEND_HOST}
+	}
+
+	handle {
+		root * /site
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://cdn.shopify.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+		-Server
+	}
+}

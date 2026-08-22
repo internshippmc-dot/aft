@@ -530,7 +530,7 @@ tr.clickable:hover{background:#fafbfc;cursor:pointer}
 <div class="toast" id="toast"></div>
 
 <script>
-const TODAY = '2026-08-14';
+const TODAY = new Date().toISOString().slice(0,10);
 
 const stages = [
   'Batch Created','Sheet Sent','Paid','Manufacturer → Hexalog','At Hexalog','Flight Planned','China → India','Delhi Warehouse','Last Mile','Delivered'
@@ -891,7 +891,7 @@ renderAll();
 <script>
 // ===== Actually Fair prototype v2 enhancements =====
 (function(){
-  const TODAY='2026-08-14';
+  const TODAY=new Date().toISOString().slice(0,10);
 
   // --- Enrich existing AFT records ---
   const manufacturerByAft = {
@@ -1565,7 +1565,7 @@ renderAll();
 <script>
 // ===== Actually Fair Logistics Prototype V3 =====
 (function(){
-  const TODAY_V3='2026-08-14';
+  const TODAY_V3=new Date().toISOString().slice(0,10);
 
   function parseISOv3(v){ const d=new Date(v+'T00:00:00'); return isNaN(d)?new Date(TODAY_V3+'T00:00:00'):d; }
   function diffDaysV3(from,to=TODAY_V3){ return Math.max(0,Math.floor((parseISOv3(to)-parseISOv3(from))/86400000)); }
@@ -1985,7 +1985,7 @@ renderAll();
 <script>
 // ===== Actually Fair Logistics Prototype V4 =====
 (function(){
-  const TODAY4='2026-08-14';
+  const TODAY4=new Date().toISOString().slice(0,10);
 
   function d4(v){const x=new Date((v||TODAY4)+'T00:00:00'); return isNaN(x)?new Date(TODAY4+'T00:00:00'):x}
   function days4(v){return Math.max(0,Math.floor((d4(TODAY4)-d4(v))/86400000))}
@@ -2503,7 +2503,7 @@ renderAll();
 <script>
 /* ===== V5 FINAL OVERRIDE: Orders ===== */
 (function(){
-  const TODAY5='2026-08-14';
+  const TODAY5=new Date().toISOString().slice(0,10);
 
   function parse5(v){
     const d=new Date((v||TODAY5)+'T00:00:00');
@@ -2967,7 +2967,7 @@ renderAll();
 <script>
 /* ===== V6 final Orders behavior ===== */
 (function(){
-  const TODAY6='2026-08-14';
+  const TODAY6=new Date().toISOString().slice(0,10);
   const expandedDue6={};
 
   function p6(v){
@@ -3368,7 +3368,7 @@ renderAll();
 <script>
 /* ===== V7 Orders + actual-date roadmap ===== */
 (function(){
-  const TODAY7='2026-08-14';
+  const TODAY7=new Date().toISOString().slice(0,10);
   const expandedDue7={};
 
   function parse7(v){
@@ -3899,7 +3899,7 @@ renderAll();
 <script>
 /* ===== V8 final Orders table / filters / flag behavior ===== */
 (function(){
-  const TODAY8='2026-08-14';
+  const TODAY8=new Date().toISOString().slice(0,10);
   const expandedDue8={};
   const expandedFlag8={};
 
@@ -4307,7 +4307,7 @@ renderAll();
 <script>
 /* ===== V10 applied filters + cleaner order drawer roadmap ===== */
 (function(){
-  const TODAY10='2026-08-14';
+  const TODAY10=new Date().toISOString().slice(0,10);
 
   function parse10(v){
     if(!v)return null;
@@ -4753,7 +4753,7 @@ renderAll();
 <script>
 /* ===== V14: robust order status update + permanent full roadmap ===== */
 (function(){
-  const TODAY14 = '2026-08-14';
+  const TODAY14 = new Date().toISOString().slice(0,10);
 
   function p14(v){
     if(!v) return null;
@@ -5100,7 +5100,7 @@ renderAll();
 <script>
 /* ===== V15 functionality ===== */
 (function(){
-  const TODAY15='2026-08-14';
+  const TODAY15=new Date().toISOString().slice(0,10);
   const PAGE_SIZE15=50;
   let orderPage15=1;
 
@@ -6030,7 +6030,7 @@ renderAll();
 <script>
 /* ===== V16 status/roadmap + Payments date filters ===== */
 (function(){
-  const TODAY16='2026-08-14';
+  const TODAY16=new Date().toISOString().slice(0,10);
 
   function parse16(v){
     if(!v)return null;
@@ -7472,7 +7472,7 @@ renderAll();
 <script>
 /* ===== V19 self-contained functional fixes ===== */
 (function(){
-  const TODAY19='2026-08-14';
+  const TODAY19=new Date().toISOString().slice(0,10);
 
   /* ---------------- Shared helpers: intentionally self-contained ---------------- */
   function esc19(value){
@@ -8331,7 +8331,7 @@ renderAll();
 <script>
 /* ===== V20 self-contained editable AFT package ===== */
 (function(){
-  const TODAY20='2026-08-14';
+  const TODAY20=new Date().toISOString().slice(0,10);
   const editOpen20={};
   const addMessage20={};
 
@@ -9346,7 +9346,7 @@ renderAll();
 <script>
 /* ===== V22 completely self-contained AFT package behavior ===== */
 (function(){
-  const TODAY22='2026-08-14';
+  const TODAY22=new Date().toISOString().slice(0,10);
   const editOpen22={};
   const feedback22={};
 
@@ -9928,7 +9928,7 @@ renderAll();
 <script>
 /* ===== V23 ===== */
 (function(){
-  const TODAY23='2026-08-14';
+  const TODAY23=new Date().toISOString().slice(0,10);
   const PAGE23=8;
   let actionPage23=1;
   let taskPage23=1;
@@ -10667,7 +10667,7 @@ renderAll();
 <script>
 /* ===== V24 Add Reminder with Notes ===== */
 (function(){
-  const TODAY24='2026-08-14';
+  const TODAY24=new Date().toISOString().slice(0,10);
 
   /* Add Notes field to the existing reminder modal */
   const form = document.querySelector('#reminderModal .formgrid');
@@ -11393,7 +11393,7 @@ button[onclick^="closeAction23("]{
 <script>
 /* ===== V26 ===== */
 (function(){
-  const TODAY26='2026-08-14';
+  const TODAY26=new Date().toISOString().slice(0,10);
   let flagEntity26=null;
 
   function esc26(v){
@@ -12128,7 +12128,7 @@ button[onclick^="closeAction23("]{
 <script>
 /* ===== V27 ===== */
 (function(){
-  const TODAY27='2026-08-14';
+  const TODAY27=new Date().toISOString().slice(0,10);
 
   function esc27(v){
     const d=document.createElement('div');
@@ -12578,7 +12578,7 @@ button[onclick^="closeAction23("]{
 <script>
 /* ===== V28 ===== */
 (function(){
-  const TODAY28='2026-08-14';
+  const TODAY28=new Date().toISOString().slice(0,10);
   window.__afFlagState28=null;
 
   function esc28(v){
@@ -13247,5 +13247,1095 @@ button[onclick^="closeAction23("]{
 })();
 </script>
 
+<script>
+/* =====================================================================
+   V29 — Real backend integration.
+
+   Everything above this script is the untouched v28 prototype: mock
+   arrays (batches/orders/tasks/messages/paymentsV2/returnsV2) rendered
+   by a long chain of monkey-patched functions. This script does not
+   rewrite any of that UI — it (1) gates the app behind a real login,
+   (2) replaces the mock arrays with data fetched from the FastAPI
+   backend at boot and after every mutation, and (3) overrides the
+   handful of "final" save/create/delete functions (the ones actually
+   still wired to onclick="..." in the currently-live render functions)
+   so each button performs the matching real API call instead of just
+   mutating the in-memory array.
+
+   Known, deliberate gaps (backend has no field/endpoint for these yet —
+   the corresponding controls stay visible and clickable but say so
+   honestly instead of silently no-op'ing or fabricating a save):
+     - Per-order internal notes (no `notes` column on orders) → kept
+       local to this browser via localStorage, same key across reloads.
+     - Manual per-order status override → orders' status/stage is
+       computed server-side from its AFT box's stage; the dropdown in
+       the order drawer explains this instead of pretending to save.
+     - Editing an existing payment record → payments API is
+       list+create only (no PATCH/DELETE yet).
+     - Editing notes on an existing task/reminder → tasks API is
+       list+create+complete only (no generic PATCH yet).
+     - Re-opening a completed task → same reason.
+     - Fine-grained AFT sub-milestones the backend doesn't track as
+       columns yet (sheet-sent, PL-sent, flight-asked/shared vs actual,
+       customs, last-mile dispatch, delivery-completed, feedback-sent)
+       are kept as local-only annotations per AFT number.
+     - File attachments on an AFT package stay IndexedDB/local-only
+       (no upload endpoint on the backend).
+   ===================================================================== */
+(function () {
+  "use strict";
+
+  const API_BASE = "/api/v1";
+
+  function readCookie(name) {
+    const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  async function request(path, options) {
+    options = options || {};
+    const method = (options.method || "GET").toUpperCase();
+    const headers = {};
+    if (options.body !== undefined) headers["Content-Type"] = "application/json";
+    if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+      const csrf = readCookie("csrf_token");
+      if (csrf) headers["X-CSRF-Token"] = csrf;
+    }
+    const res = await fetch(API_BASE + path, {
+      method,
+      headers,
+      credentials: "include",
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+    if (!res.ok) {
+      let message = "Request failed (" + res.status + ")";
+      try {
+        const body = await res.json();
+        message = body.message || message;
+      } catch (e) {}
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  const API = {
+    get: (p) => request(p),
+    post: (p, b) => request(p, { method: "POST", body: b }),
+    patch: (p, b) => request(p, { method: "PATCH", body: b }),
+    del: (p) => request(p, { method: "DELETE" }),
+  };
+  window.AF_API = API;
+
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+  function normOrderId(n) {
+    n = String(n || "").trim();
+    return n.startsWith("#") ? n : "#" + n;
+  }
+  function bareOrderNumber(id) {
+    return String(id || "").replace(/^#/, "");
+  }
+  function bareAft(id) {
+    return String(id || "").trim();
+  }
+
+  // ---- local-only supplemental storage (see gaps list at top) ----
+  function lsGet(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+  function lsSet(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {}
+  }
+  function localAftDates(aft) {
+    return lsGet("af29_aft_dates:" + aft, {});
+  }
+  function saveLocalAftDates(aft, patch) {
+    const cur = localAftDates(aft);
+    Object.keys(patch).forEach((k) => {
+      if (patch[k]) cur[k] = patch[k];
+    });
+    lsSet("af29_aft_dates:" + aft, cur);
+  }
+  function localOrderNote(orderId) {
+    return lsGet("af29_order_note:" + orderId, "");
+  }
+  function saveLocalOrderNote(orderId, text) {
+    lsSet("af29_order_note:" + orderId, text || "");
+  }
+
+  // =====================================================================
+  // LOGIN GATE
+  // =====================================================================
+  function ensureLoginOverlay() {
+    if (document.getElementById("af29LoginOverlay")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div id="af29LoginOverlay" style="position:fixed;inset:0;background:#111214;display:flex;' +
+        'align-items:center;justify-content:center;z-index:9999;font-family:inherit">' +
+        '<div style="width:360px;background:#fff;border-radius:15px;padding:28px;box-shadow:0 25px 60px rgba(0,0,0,.35)">' +
+        '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px">' +
+        '<div style="width:34px;height:34px;border-radius:10px;background:#111214;color:#fff;display:grid;place-items:center;font-weight:800">AF</div>' +
+        '<div><div style="font-weight:800;font-size:15px">Actually Fair</div><div style="font-size:11px;color:#6b7280">Logistics Control Tower</div></div>' +
+        "</div>" +
+        '<div class="field" style="margin-bottom:11px"><label>Email</label><input id="af29Email" type="email" autocomplete="username"></div>' +
+        '<div class="field" style="margin-bottom:15px"><label>Password</label><input id="af29Password" type="password" autocomplete="current-password"></div>' +
+        '<div id="af29LoginError" style="color:#b42318;font-size:11px;margin-bottom:11px;display:none"></div>' +
+        '<button class="btn primary" id="af29LoginBtn" style="width:100%;justify-content:center">Sign in</button>' +
+        "</div></div>"
+    );
+    document.getElementById("af29LoginBtn").addEventListener("click", doLogin);
+    ["af29Email", "af29Password"].forEach((id) =>
+      document.getElementById(id).addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doLogin();
+      })
+    );
+    document.getElementById("af29Email").focus();
+  }
+
+  async function doLogin() {
+    const email = document.getElementById("af29Email").value.trim();
+    const password = document.getElementById("af29Password").value;
+    const errBox = document.getElementById("af29LoginError");
+    errBox.style.display = "none";
+    if (!email || !password) {
+      errBox.textContent = "Enter your email and password.";
+      errBox.style.display = "block";
+      return;
+    }
+    try {
+      await API.post("/auth/login", { email, password });
+      document.getElementById("af29LoginOverlay").remove();
+      await boot();
+    } catch (e) {
+      errBox.textContent = e.message || "Login failed";
+      errBox.style.display = "block";
+    }
+  }
+
+  window.addEventListener("aft:unauthorized", () => {
+    ensureLoginOverlay();
+  });
+
+  // =====================================================================
+  // DATA LOADING + MAPPING
+  // =====================================================================
+
+  async function loadResourcesRaw() {
+    try {
+      return await API.get("/resources");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function loadEverything() {
+    const [boxesRaw, cardsRaw, ordersRaw, paymentsRaw, returnsRaw, tasksRaw, messagesRaw, resourcesRaw] =
+      await Promise.all([
+        API.get("/boxes"),
+        API.get("/control-tower"),
+        API.get("/orders"),
+        API.get("/payments"),
+        API.get("/returns"),
+        API.get("/tasks"),
+        API.get("/messages"),
+        loadResourcesRaw(),
+      ]);
+
+    // ---- orders[] ----
+    orders.length = 0;
+    ordersRaw.forEach((o) => {
+      const id = normOrderId(o.order_number);
+      orders.push({
+        id,
+        rawOrderNumber: o.order_number,
+        name: o.customer_name || "Unknown",
+        phone: "",
+        product: o.item_count + (o.item_count === 1 ? " item" : " items"),
+        variant: "",
+        aft: o.box_aft_number || null,
+        status: o.box_aft_number ? "Processing" : "Confirmed · Ready to batch",
+        last: "",
+        awb: "—",
+        split: false,
+        delivered: false,
+        orderDate: (o.placed_at || "").slice(0, 10),
+        paymentType: "—",
+        notes: localOrderNote(id),
+        flagged: false,
+        flagReason: "",
+      });
+    });
+
+    // ---- paymentsV2 ----
+    window.paymentsV2 = paymentsRaw.map((p) => ({
+      id: p.id,
+      date: p.occurred_on,
+      type: p.type,
+      to: p.payee,
+      ref: p.reference || p.box_aft_number || "",
+      boxAft: p.box_aft_number || null,
+      amount: Number(p.amount_inr) || 0,
+      by: p.paid_by,
+      method: p.method || "",
+      notes: p.notes || "",
+    }));
+
+    // ---- returnsV2 ----
+    window.returnsV2 = returnsRaw.map((r) => ({
+      id: r.id,
+      order: normOrderId(r.order_number),
+      customer: r.customer_name || "",
+      type: r.type,
+      reason: r.reason || "",
+      status: r.status,
+      requested: r.requested_on,
+      next: r.next_action || "",
+      notes: r.notes || "",
+    }));
+
+    // ---- tasks[] ----
+    tasks.length = 0;
+    tasksRaw.forEach((t) => {
+      const sourceFlag = /^Priority\b/.test(t.title || "");
+      let bucket = "upcoming";
+      if (t.due_on) {
+        if (t.due_on < todayISO()) bucket = "overdue";
+        else if (t.due_on === todayISO()) bucket = "today";
+      } else if (sourceFlag) {
+        bucket = "today";
+      }
+      tasks.push({
+        id: t.id,
+        priority: t.priority,
+        title: t.title,
+        entity: t.entity_id || "General",
+        due: t.due_on ? (t.due_on === todayISO() ? "Today" : t.due_on) : sourceFlag ? "Priority" : "—",
+        date: t.due_on || todayISO(),
+        type: sourceFlag ? "Priority Flag" : "Manual",
+        status: t.status,
+        bucket,
+        sourceFlag,
+        entityType: t.entity_type,
+        entityId: t.entity_id,
+        notes: t.notes || "",
+        completedAt: t.completed_at,
+      });
+    });
+
+    // order-level flags derive from open Priority tasks
+    orders.forEach((o) => {
+      const t = tasks.find((x) => x.sourceFlag && x.entityType === "order" && x.entityId === bareOrderNumber(o.id) && x.status === "Open");
+      if (t) {
+        o.flagged = true;
+        o.flagReason = t.title.replace(/^Priority\s*·\s*/, "").replace(o.id, "").replace(/^\s*—\s*/, "");
+      }
+    });
+
+    // ---- batches[] (boxes + control-tower merged) ----
+    const cardsByAft = {};
+    cardsRaw.forEach((c) => (cardsByAft[c.aft_number] = c));
+
+    batches.length = 0;
+    boxesRaw.forEach((box) => {
+      const card = cardsByAft[box.aft_number] || {};
+      const aft = box.aft_number;
+      const localDates = localAftDates(aft);
+
+      const legs = box.legs || {};
+      const mfgDispatch = legs.MFG_DISPATCH || null;
+      const cnWarehouse = card.hexalog_arrival || legs.CN_WAREHOUSE || null;
+      const flight = card.flight_date || legs.FLIGHT || null;
+      const delhi = card.delhi_arrival || legs.DELHI_WAREHOUSE || null;
+
+      const manufacturerPayment = paymentsRaw
+        .filter((p) => p.type === "Manufacturer" && p.box_aft_number === aft)
+        .sort((a, b) => a.occurred_on.localeCompare(b.occurred_on))[0];
+
+      batches.push({
+        aft,
+        mf: card.mf_number || "",
+        manufacturer: card.manufacturer || box.manufacturer || "",
+        tracking: card.cn_tracking || box.tracking_id || "—",
+        plStatus: card.pl_status || "Pending",
+        stage: card.pipeline_stage || "Manufacturer → Hexalog",
+        next: card.next_action || "No next action set",
+        flagged: !!card.flagged,
+        flagReason: card.flag_reason || "",
+        orders: card.order_count || box.order_count || 0,
+        units: card.order_count || box.order_count || 0,
+        amountPaid: Number(card.amount_paid_inr) || 0,
+        delivery: card.delivery_pct || 0,
+        labels: (card.labels_generated || 0) + " / " + (card.labels_total || 0),
+        created: (box.created_at || "").slice(0, 10),
+        paymentDate: manufacturerPayment ? manufacturerPayment.occurred_on : (box.created_at || "").slice(0, 10),
+        dispatch: mfgDispatch || "—",
+        manufacturerDispatchDate: mfgDispatch,
+        trackingReceivedDate: localDates.trackingReceivedDate || mfgDispatch,
+        hexalogActualDate: cnWarehouse,
+        flightDate: flight,
+        flightActualDate: flight,
+        flight: flight || "—",
+        delhiActualDate: delhi,
+        eta: box.eta ? box.eta.p50_date : "—",
+        health: box.sla_risk ? "overdue" : "active",
+        days: box.created_at ? Math.max(0, Math.floor((Date.now() - new Date(box.created_at)) / 86400000)) : 0,
+        workflowDay: 0,
+        notes: box.notes || "",
+        grossWeightKg: box.gross_weight_kg,
+        orderRange: "",
+        batchOrderDate: (box.created_at || "").slice(0, 10),
+        sheetSentDate: localDates.sheetSentDate || null,
+        plSentDate: localDates.plSentDate || (card.pl_status === "Sent" ? card.hexalog_arrival || box.created_at : null),
+        flightUpdateAskedDate: localDates.flightUpdateAskedDate || null,
+        flightDateSharedDate: localDates.flightDateSharedDate || flight,
+        customsDate: localDates.customsDate || null,
+        lastMileDispatchDate: localDates.lastMileDispatchDate || null,
+        deliveryCompletedDate: localDates.deliveryCompletedDate || (card.delivery_pct === 100 ? delhi : null),
+        feedbackCompletedDate: localDates.feedbackCompletedDate || null,
+      });
+    });
+
+    // batch order-range + batchOrderDate from real orders
+    batches.forEach((b) => {
+      const linked = orders.filter((o) => o.aft === b.aft);
+      const nums = linked
+        .map((o) => parseInt(bareOrderNumber(o.id).replace(/\D/g, ""), 10))
+        .filter((n) => Number.isFinite(n))
+        .sort((a, c) => a - c);
+      b.orderRange = nums.length ? "#" + nums[0] + "–#" + nums[nums.length - 1] : "No orders assigned";
+      const dates = linked.map((o) => o.orderDate).filter(Boolean).sort();
+      if (dates.length) b.batchOrderDate = dates[0];
+    });
+
+    // ---- messages[] ----
+    messages.length = 0;
+    messagesRaw.forEach((m) => {
+      const orderId = normOrderId(m.order_number);
+      const linkedOrder = orders.find((o) => o.id === orderId);
+      messages.push({
+        id: m.id,
+        type: m.type,
+        order: orderId,
+        name: linkedOrder ? linkedOrder.name : "",
+        aft: m.box_aft_number || (linkedOrder ? linkedOrder.aft : null) || "",
+        status: m.status,
+        body: m.body || "",
+      });
+    });
+
+    // ---- resources ----
+    window.__af29Resources = resourcesRaw;
+
+    return true;
+  }
+
+  async function reloadAndRender() {
+    await loadEverything();
+    if (typeof renderAll === "function") renderAll();
+    if (typeof window.renderResourcesReal === "function") window.renderResourcesReal();
+  }
+  window.af29Reload = reloadAndRender;
+
+  // =====================================================================
+  // RESOURCES (Other Links & SOPs) — full real CRUD, replaces V26's
+  // localStorage-backed implementation end to end.
+  // =====================================================================
+  function esc29(v) {
+    return typeof esc === "function" ? esc(v) : String(v == null ? "" : v);
+  }
+
+  window.renderResourcesReal = function () {
+    const holderLinks = document.getElementById("linksList26");
+    const holderSops = document.getElementById("sopList26");
+    if (!holderLinks || !holderSops) return;
+    const q = (document.getElementById("resourceSearch26") ? document.getElementById("resourceSearch26").value : "").toLowerCase();
+    const typeFilter = document.getElementById("resourceType26") ? document.getElementById("resourceType26").value : "";
+    let rows = (window.__af29Resources || []).filter((r) => {
+      if (typeFilter && r.type !== typeFilter) return false;
+      if (q && JSON.stringify(r).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    const links = rows.filter((r) => r.type === "Link");
+    const sops = rows.filter((r) => r.type === "SOP");
+
+    holderLinks.innerHTML =
+      links
+        .map(
+          (r) =>
+            '<div class="resource26"><div class="resource26-top"><div><div class="resource26-title">' +
+            esc29(r.title) +
+            '</div><div class="resource26-category">' +
+            esc29(r.category || "General") +
+            '</div></div><span class="pill blue">Link</span></div>' +
+            (r.description ? '<div class="resource26-desc">' + esc29(r.description) + "</div>" : "") +
+            '<div class="resource26-actions">' +
+            (r.url ? '<a class="primary" href="' + esc29(r.url) + '" target="_blank" rel="noopener">Open Link →</a>' : "") +
+            '<button onclick="openResourceModalReal(' + r.id + ')">Edit</button>' +
+            '<button class="delete" onclick="deleteResourceReal(' + r.id + ')">Delete</button></div></div>'
+        )
+        .join("") || '<div class="empty26">No links match this filter.</div>';
+
+    holderSops.innerHTML =
+      sops
+        .map(
+          (r) =>
+            '<div class="resource26"><div class="resource26-top"><div><div class="resource26-title">' +
+            esc29(r.title) +
+            '</div><div class="resource26-category">' +
+            esc29(r.category || "General") +
+            '</div></div><span class="pill purple">SOP</span></div>' +
+            (r.description ? '<div class="resource26-desc">' + esc29(r.description) + "</div>" : "") +
+            (r.process_text ? '<div class="sop26-process">' + esc29(r.process_text) + "</div>" : "") +
+            '<div class="resource26-actions">' +
+            (r.url ? '<a class="primary" href="' + esc29(r.url) + '" target="_blank" rel="noopener">Open Reference →</a>' : "") +
+            '<button onclick="openResourceModalReal(' + r.id + ')">Edit</button>' +
+            '<button class="delete" onclick="deleteResourceReal(' + r.id + ')">Delete</button></div></div>'
+        )
+        .join("") || '<div class="empty26">No SOPs match this filter.</div>';
+  };
+
+  window.openResourceModalReal = function (id) {
+    const r = id ? (window.__af29Resources || []).find((x) => x.id === id) : null;
+    document.getElementById("resourceModalTitle26").textContent = r ? "Edit Resource" : "Add Resource";
+    document.getElementById("resourceId26").value = r ? r.id : "";
+    document.getElementById("resourceEditType26").value = r ? r.type : "Link";
+    document.getElementById("resourceCategory26").value = r ? r.category || "" : "";
+    document.getElementById("resourceTitle26").value = r ? r.title || "" : "";
+    document.getElementById("resourceUrl26").value = r ? r.url || "" : "";
+    document.getElementById("resourceDescription26").value = r ? r.description || "" : "";
+    document.getElementById("resourceProcess26").value = r ? r.process_text || "" : "";
+    openModal("resourceModal26");
+  };
+
+  window.saveResourceReal = async function () {
+    const id = document.getElementById("resourceId26").value;
+    const body = {
+      type: document.getElementById("resourceEditType26").value,
+      title: document.getElementById("resourceTitle26").value.trim(),
+      category: document.getElementById("resourceCategory26").value.trim() || null,
+      url: document.getElementById("resourceUrl26").value.trim() || null,
+      description: document.getElementById("resourceDescription26").value.trim() || null,
+      process_text: document.getElementById("resourceProcess26").value.trim() || null,
+    };
+    if (!body.title) {
+      toast("Add a resource title");
+      return;
+    }
+    try {
+      if (id) await API.patch("/resources/" + id, body);
+      else await API.post("/resources", body);
+      closeModal("resourceModal26");
+      toast("Team resource saved");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not save resource");
+    }
+  };
+
+  window.deleteResourceReal = async function (id) {
+    try {
+      await API.del("/resources/" + id);
+      toast("Resource removed");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not delete resource");
+    }
+  };
+
+  // Reroute every legacy resource entry point onto the real ones.
+  window.renderResources26 = window.renderResourcesReal;
+  window.openResourceModal26 = window.openResourceModalReal;
+  window.saveResource26 = window.saveResourceReal;
+  window.deleteResource26 = window.deleteResourceReal;
+
+  ["resourceSearch26", "resourceType26"].forEach((id) => {
+    document.addEventListener(
+      "input",
+      (e) => {
+        if (e.target && e.target.id === id) window.renderResourcesReal();
+      },
+      true
+    );
+  });
+
+  // =====================================================================
+  // PRIORITY FLAGS (orders + AFT batches) — unify every legacy entry
+  // point onto real Tasks (orders) / Control Tower flag fields (batches).
+  // =====================================================================
+  let flagState = null;
+
+  function flagObj(type, id) {
+    return type === "order" ? orders.find((o) => o.id === id) : batches.find((b) => b.aft === id);
+  }
+  function openFlagTaskFor(id) {
+    return tasks.find((t) => t.sourceFlag && t.entityType === "order" && t.entityId === bareOrderNumber(id) && t.status === "Open");
+  }
+
+  window.openFlagModalReal = function (type, id, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const obj = flagObj(type, id);
+    if (!obj) return;
+    flagState = { type, id };
+    document.getElementById("flagTitle26").textContent = obj.flagged ? "Edit Priority Flag" : "Flag Priority";
+    document.getElementById("flagEntityLabel26").innerHTML =
+      "<b>" + (type === "order" ? "Order" : "AFT Package") + " " + esc29(id) + "</b>" + (type === "order" && obj.name ? " · " + esc29(obj.name) : "");
+    document.getElementById("flagPriority26").value = obj.flagPriority || "High";
+    document.getElementById("flagReason26").value = obj.flagReason || "";
+    document.getElementById("flagNotes26").value = obj.flagNotes || "";
+    document.getElementById("clearFlag26").style.display = obj.flagged ? "inline-flex" : "none";
+    openModal("flagModal26");
+  };
+
+  window.saveFlagReal = async function () {
+    if (!flagState) return;
+    const { type, id } = flagState;
+    const priority = document.getElementById("flagPriority26").value;
+    const reason = document.getElementById("flagReason26").value.trim();
+    const notes = document.getElementById("flagNotes26").value.trim();
+    try {
+      if (type === "batch") {
+        await API.patch("/control-tower/" + encodeURIComponent(bareAft(id)), {
+          flagged: true,
+          flag_reason: reason || notes || "Flagged",
+        });
+      } else {
+        const existing = openFlagTaskFor(id);
+        if (existing) await API.patch("/tasks/" + existing.id + "/complete");
+        await API.post("/tasks", {
+          title: "Priority · " + id + (reason ? " — " + reason : ""),
+          priority,
+          entity_type: "order",
+          entity_id: bareOrderNumber(id),
+          notes,
+        });
+      }
+      closeModal("flagModal26");
+      toast(id + " flagged as " + priority.toLowerCase() + " priority");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not save priority flag");
+    }
+  };
+
+  window.clearFlagReal = async function () {
+    if (!flagState) return;
+    const { type, id } = flagState;
+    try {
+      if (type === "batch") {
+        await API.patch("/control-tower/" + encodeURIComponent(bareAft(id)), { flagged: false, flag_reason: "" });
+      } else {
+        const existing = openFlagTaskFor(id);
+        if (existing) await API.patch("/tasks/" + existing.id + "/complete");
+      }
+      closeModal("flagModal26");
+      toast(id + " priority cleared");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not clear priority flag");
+    }
+  };
+
+  // Every legacy flag entry point, from every V-numbered patch, lands here.
+  window.openFlagModal26 = window.openFlagModalReal;
+  window.openFlagModal28 = window.openFlagModalReal;
+  window.saveFlag26 = window.saveFlagReal;
+  window.saveFlag28 = window.saveFlagReal;
+  window.saveFlag8 = window.saveFlagReal;
+  window.clearFlag26 = window.clearFlagReal;
+  window.clearFlag28 = window.clearFlagReal;
+  window.resolveFlag8 = window.clearFlagReal;
+  window.toggleFlagV3 = function (type, id, e) {
+    window.openFlagModalReal(type, id, e);
+  };
+  window.toggleFlag6 = function (id, e) {
+    window.openFlagModalReal("order", id, e);
+  };
+  window.toggleFlagPanel8 = function (id, e) {
+    window.openFlagModalReal("order", id, e);
+  };
+
+  // =====================================================================
+  // AFT PACKAGES — save/attach/detach
+  // =====================================================================
+  window.saveAftReal = async function (aft) {
+    const v = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : "";
+    };
+    const b = batches.find((x) => x.aft === aft);
+    if (!b) return;
+    try {
+      const boxPatch = {};
+      if (v("a23Manufacturer")) boxPatch.manufacturer = v("a23Manufacturer");
+      if (Object.keys(boxPatch).length) await API.patch("/boxes/" + encodeURIComponent(aft), boxPatch);
+
+      const stage = v("a23Stage");
+      const towerPatch = { pipeline_stage: stage };
+      if (v("a23Mf")) towerPatch.mf_number = v("a23Mf");
+      if (v("a23Tracking")) towerPatch.cn_tracking = v("a23Tracking");
+      await API.patch("/control-tower/" + encodeURIComponent(aft), towerPatch);
+
+      const legWrites = [
+        ["MFG_DISPATCH", v("a23Dispatch")],
+        ["CN_WAREHOUSE", v("a23Hexalog")],
+        ["FLIGHT", v("a23FlightActual") || v("a23FlightPlanned")],
+        ["DELHI_WAREHOUSE", v("a23Delhi")],
+      ];
+      for (const [leg, date] of legWrites) {
+        if (date) await API.post("/boxes/" + encodeURIComponent(aft) + "/legs", { leg, occurred_on: date });
+      }
+
+      const amount = Number(v("a23Amount") || 0);
+      const hasManufacturerPayment = (window.paymentsV2 || []).some((p) => p.type === "Manufacturer" && p.boxAft === aft);
+      if (amount > 0 && !hasManufacturerPayment) {
+        await API.post("/payments", {
+          occurred_on: v("a23Payment") || todayISO(),
+          type: "Manufacturer",
+          payee: v("a23Manufacturer") || "Manufacturer",
+          box_aft_number: aft,
+          amount_inr: amount,
+          paid_by: "Ops",
+        });
+      }
+
+      saveLocalAftDates(aft, {
+        sheetSentDate: v("a23Sheet"),
+        trackingReceivedDate: v("a23TrackingReceived"),
+        plSentDate: v("a23PL"),
+        flightUpdateAskedDate: v("a23FlightAsk"),
+        flightDateSharedDate: v("a23FlightShared"),
+        customsDate: v("a23Customs"),
+        lastMileDispatchDate: v("a23LastMile"),
+        deliveryCompletedDate: v("a23Delivery"),
+        feedbackCompletedDate: v("a23Feedback"),
+      });
+
+      toast(aft + " updated");
+      await reloadAndRender();
+      if (typeof window.openBatch === "function") window.openBatch(aft);
+    } catch (e) {
+      toast(e.message || "Could not save AFT package");
+    }
+  };
+  window.saveAft23 = window.saveAftReal;
+  window.saveAft22 = window.saveAftReal;
+  window.saveAft20 = window.saveAftReal;
+
+  window.addOrderToAftReal = async function (aft) {
+    const input = document.getElementById("v22AddOrder") || document.getElementById("aft20AddOrder");
+    let raw = input ? input.value.trim() : "";
+    if (!raw) return;
+    const orderNumber = bareOrderNumber(normOrderId(raw));
+    try {
+      const result = await API.post("/boxes/" + encodeURIComponent(aft) + "/items", { orders_raw: orderNumber });
+      if (result.failed && result.failed.length) {
+        toast(result.failed[0].reason || (orderNumber + " could not be attached"));
+      } else if (result.missing && result.missing.length) {
+        toast("#" + orderNumber + " does not exist yet — create it first, then attach it.");
+      } else {
+        toast(normOrderId(orderNumber) + " added to " + aft);
+      }
+      await reloadAndRender();
+      if (typeof window.openBatch === "function") window.openBatch(aft);
+    } catch (e) {
+      toast(e.message || "Could not attach order");
+    }
+  };
+  window.addOrderToAft22 = window.addOrderToAftReal;
+  window.addOrderToAft20 = window.addOrderToAftReal;
+
+  window.removeOrderFromAftReal = async function (aft, orderId, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      const manifest = await API.get("/boxes/" + encodeURIComponent(aft));
+      const orderNumber = bareOrderNumber(orderId);
+      const match = (manifest.orders || []).find((o) => bareOrderNumber(normOrderId(o.order_number)) === orderNumber);
+      if (!match || !match.items || !match.items.length) {
+        toast(orderId + " is not in " + aft);
+        return;
+      }
+      for (const item of match.items) {
+        await API.del("/boxes/" + encodeURIComponent(aft) + "/items/" + item.id);
+      }
+      toast(orderId + " removed from " + aft);
+      await reloadAndRender();
+      if (typeof window.openBatch === "function") window.openBatch(aft);
+    } catch (e2) {
+      toast(e2.message || "Could not remove order");
+    }
+  };
+  window.removeOrderFromAft22 = window.removeOrderFromAftReal;
+  window.removeOrderFromAft20 = window.removeOrderFromAftReal;
+
+  // ---- Create AFT Batch modal ----
+  function wireCreateBatchButton() {
+    const btn = document.getElementById("confirmCreateBatch");
+    if (!btn) return;
+    const clone = btn.cloneNode(true);
+    btn.replaceWith(clone);
+    clone.addEventListener("click", async () => {
+      const ids = [...document.querySelectorAll(".batchPick:checked")].map((x) => x.value);
+      if (!ids.length) {
+        toast("Select at least one order");
+        return;
+      }
+      const aft = (document.getElementById("newAftCode") || {}).value?.trim();
+      if (!aft) {
+        toast("Enter an AFT code");
+        return;
+      }
+      const manufacturer = (document.getElementById("newBatchManufacturer") || {}).value?.trim() || null;
+      const mf = (document.getElementById("newMfCode") || {}).value?.trim() || null;
+      const amount = Number((document.getElementById("newBatchAmount") || {}).value || 0);
+      const paidBy = (document.getElementById("newBatchPaidBy") || {}).value?.trim() || "Ops";
+      const dateVal = (document.getElementById("newAftDate") || {}).value || todayISO();
+      try {
+        const ordersRaw = ids.map(bareOrderNumber).join(",");
+        await API.post("/boxes", { aft_number: aft, manufacturer, orders_raw: ordersRaw });
+        const towerPatch = { pipeline_stage: "Manufacturer → Hexalog" };
+        if (mf) towerPatch.mf_number = mf;
+        await API.patch("/control-tower/" + encodeURIComponent(aft), towerPatch);
+        if (amount > 0) {
+          await API.post("/payments", {
+            occurred_on: dateVal,
+            type: "Manufacturer",
+            payee: manufacturer || "Manufacturer",
+            box_aft_number: aft,
+            amount_inr: amount,
+            paid_by: paidBy,
+          });
+        }
+        closeModal("batchModal");
+        toast(aft + " created with " + ids.length + " order" + (ids.length === 1 ? "" : "s"));
+        await reloadAndRender();
+        showView("batches");
+      } catch (err) {
+        toast(err.message || "Could not create AFT batch");
+      }
+    });
+  }
+
+  // =====================================================================
+  // ORDER STATUS — no manual override in the backend; be honest.
+  // =====================================================================
+  const explainOrderStatus = () =>
+    toast("Order status follows its AFT package's stage automatically — update the AFT package instead of the order.");
+  ["saveOrderStatus4", "saveOrderStatus5", "saveOrderStatus7", "saveOrderStatus14", "saveOrderStatus15", "saveOrderStatus16"].forEach((name) => {
+    window[name] = explainOrderStatus;
+  });
+
+  // ---- order notes: local-only (no backend column) ----
+  let activeNoteOrder = null;
+  window.editNoteReal = function (id, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const o = orders.find((x) => x.id === id);
+    if (!o) return;
+    activeNoteOrder = id;
+    document.getElementById("noteEditTitle").textContent = "Note · " + id + " (saved on this device only)";
+    document.getElementById("noteEditText").value = o.notes || "";
+    openModal("noteEditModal");
+  };
+  window.saveNoteReal = function () {
+    const o = orders.find((x) => x.id === activeNoteOrder);
+    if (!o) return;
+    o.notes = document.getElementById("noteEditText").value.trim();
+    saveLocalOrderNote(o.id, o.notes);
+    closeModal("noteEditModal");
+    toast("Note saved on this device");
+    if (typeof renderAll === "function") renderAll();
+  };
+  window.clearNoteReal = function () {
+    const o = orders.find((x) => x.id === activeNoteOrder);
+    if (!o) return;
+    o.notes = "";
+    saveLocalOrderNote(o.id, "");
+    document.getElementById("noteEditText").value = "";
+    closeModal("noteEditModal");
+    toast("Note cleared");
+    if (typeof renderAll === "function") renderAll();
+  };
+  window.editNoteV3 = window.editNoteReal;
+  window.saveNoteV3 = window.saveNoteReal;
+  window.clearNoteV3 = window.clearNoteReal;
+
+  // =====================================================================
+  // PAYMENTS
+  // =====================================================================
+  function wireAddPaymentButton() {
+    const clone = document.getElementById("paymentModal") ? document.getElementById("paymentModal") : null;
+    if (!clone) return;
+  }
+
+  window.savePaymentReal = async function () {
+    const g = (id) => (document.getElementById(id) ? document.getElementById(id).value : "");
+    const body = {
+      occurred_on: g("pDate") || todayISO(),
+      type: g("pType") || "Other",
+      payee: g("pTo").trim() || "Unknown",
+      reference: g("pRef").trim() || null,
+      box_aft_number: null,
+      amount_inr: Number(g("pAmount") || 0),
+      paid_by: g("pBy").trim() || "Ops",
+      method: g("pMethod").trim() || null,
+      notes: g("pNotes").trim() || null,
+    };
+    const aftMatch = (body.reference || "").match(/AFT\s*[\w-]+/i);
+    if (aftMatch) body.box_aft_number = aftMatch[0].replace(/AFT\s*/i, "").trim();
+    try {
+      await API.post("/payments", body);
+      closeModal("paymentModal");
+      toast("Payment added");
+      await reloadAndRender();
+      showView("payments");
+    } catch (e) {
+      toast(e.message || "Could not add payment");
+    }
+  };
+  window.savePaymentV2 = window.savePaymentReal;
+
+  window.savePayment19 = function () {
+    toast("Editing an existing payment isn't supported by the backend yet — record a correction as a new payment entry.");
+  };
+  window.savePayment18 = window.savePayment19;
+
+  // =====================================================================
+  // RETURNS / EXCHANGES
+  // =====================================================================
+  window.saveReturnReal = async function () {
+    const g = (id) => (document.getElementById(id) ? document.getElementById(id).value : "");
+    const body = {
+      order_number: bareOrderNumber(g("rOrder").trim()),
+      type: g("rType") || "Return",
+      reason: g("rReason").trim() || null,
+      requested_on: todayISO(),
+      next_action: g("rNext").trim() || null,
+    };
+    if (!body.order_number) {
+      toast("Enter the order number");
+      return;
+    }
+    try {
+      await API.post("/returns", body);
+      closeModal("returnModal");
+      toast("Return / exchange case created");
+      await reloadAndRender();
+      showView("returns");
+    } catch (e) {
+      toast(e.message || "Could not create the case");
+    }
+  };
+  window.saveReturnV2 = window.saveReturnReal;
+
+  window.saveReturnEditReal = async function (id) {
+    const g = (elId) => (document.getElementById(elId) ? document.getElementById(elId).value : "");
+    try {
+      await API.patch("/returns/" + id, {
+        status: g("ret19Status"),
+        next_action: g("ret19Next").trim() || null,
+        notes: g("ret19Notes").trim() || null,
+      });
+      toast("Case updated");
+      await reloadAndRender();
+      if (typeof window.openReturn19 === "function") window.openReturn19(id);
+    } catch (e) {
+      toast(e.message || "Could not update the case");
+    }
+  };
+  window.saveReturn19 = window.saveReturnEditReal;
+  window.saveReturn18 = window.saveReturnEditReal;
+
+  // =====================================================================
+  // TASKS / REMINDERS
+  // =====================================================================
+  function wireAddReminderButton() {
+    const btn = document.getElementById("saveReminder");
+    if (!btn) return;
+    const clone = btn.cloneNode(true);
+    btn.replaceWith(clone);
+    clone.addEventListener("click", async () => {
+      const title = (document.getElementById("remTitle").value || "").trim();
+      if (!title) {
+        toast("Add a reminder title");
+        return;
+      }
+      const entity = (document.getElementById("remEntity").value || "").trim();
+      const date = document.getElementById("remDate").value || null;
+      const notesEl = document.getElementById("remNotes24");
+      try {
+        await API.post("/tasks", {
+          title,
+          priority: document.getElementById("remPriority").value || "Medium",
+          entity_type: entity.startsWith("#") ? "order" : entity.toUpperCase().startsWith("AFT") ? "batch" : null,
+          entity_id: entity || null,
+          due_on: date,
+          notes: notesEl ? notesEl.value.trim() || null : null,
+        });
+        ["remTitle", "remEntity"].forEach((id) => (document.getElementById(id).value = ""));
+        if (notesEl) notesEl.value = "";
+        closeModal("reminderModal");
+        toast("Reminder added");
+        await reloadAndRender();
+        showView("reminders");
+      } catch (e) {
+        toast(e.message || "Could not add reminder");
+      }
+    });
+  }
+
+  window.markTaskDoneReal = async function (id, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      await API.patch("/tasks/" + id + "/complete");
+      toast("Task marked done");
+      await reloadAndRender();
+    } catch (e2) {
+      toast(e2.message || "Could not complete task");
+    }
+  };
+  window.markTaskDone25 = window.markTaskDoneReal;
+  window.markTaskDone23 = window.markTaskDoneReal;
+  window.completeTask15 = function (id) {
+    window.markTaskDoneReal(id);
+  };
+  window.completeTaskV3 = window.completeTask15;
+  window.completeTask = window.completeTask15;
+
+  window.reopenTask25 = function () {
+    toast("Reopening a completed task isn't supported by the backend yet.");
+  };
+  window.reopenTask23 = window.reopenTask25;
+
+  window.saveTaskNotes15 = function () {
+    toast("Editing notes on an existing task isn't supported by the backend yet — add the detail when creating the reminder.");
+  };
+  window.saveTaskNotes23 = window.saveTaskNotes15;
+
+  // =====================================================================
+  // MESSAGES
+  // =====================================================================
+  window.markMessageSent = async function (id) {
+    try {
+      await API.patch("/messages/" + id + "/sent");
+      toast("Marked sent");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not mark message sent");
+    }
+  };
+  window.markGroupSent = async function (type) {
+    const pending = messages.filter((m) => m.type === type && m.status === "Pending");
+    try {
+      for (const m of pending) await API.patch("/messages/" + m.id + "/sent");
+      toast(type + " messages marked sent");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not mark messages sent");
+    }
+  };
+  window.markBatchMessagesV2 = async function (aft, type) {
+    const pending = messages.filter((m) => m.aft === aft && m.type === type && m.status === "Pending");
+    try {
+      for (const m of pending) await API.patch("/messages/" + m.id + "/sent");
+      toast(aft + " " + type + " marked sent");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not mark messages sent");
+    }
+  };
+
+  // =====================================================================
+  // AFT stage dropdown — editPanel23's own <select id="a23Stage"> is
+  // still hardcoded to the old 10-value prototype vocabulary (Paid/At
+  // Hexalog/Flight Planned/China → India/Last Mile), but the backend's
+  // Control Tower only accepts its own 8-value PIPELINE_STAGES. Patch the
+  // select's options in place right after the drawer (re)renders so every
+  // value in it is one saveAftReal can actually persist.
+  // =====================================================================
+  const PIPELINE_STAGES = [
+    "Manufacturer → Hexalog",
+    "Sitting in Hexalog",
+    "On Flight",
+    "Delhi Warehouse",
+    "In Transit",
+    "Delivered",
+    "Feedback",
+    "Closed",
+  ];
+  function fixAftStageSelect(aft) {
+    const sel = document.getElementById("a23Stage");
+    if (!sel) return;
+    const b = batches.find((x) => x.aft === aft);
+    const current = b ? b.stage : "";
+    sel.innerHTML = PIPELINE_STAGES.map((s) => "<option" + (s === current ? " selected" : "") + ">" + s + "</option>").join("");
+  }
+  if (typeof window.openBatch === "function") {
+    const prevOpenBatchFinal = window.openBatch;
+    window.openBatch = function (aft) {
+      prevOpenBatchFinal(aft);
+      fixAftStageSelect(aft);
+    };
+  }
+  if (typeof window.toggleAftEdit23 === "function") {
+    const prevToggleAftEdit = window.toggleAftEdit23;
+    window.toggleAftEdit23 = function (aft) {
+      prevToggleAftEdit(aft);
+      fixAftStageSelect(aft);
+    };
+  }
+
+  // =====================================================================
+  // BOOT
+  // =====================================================================
+  async function boot() {
+    try {
+      await loadEverything();
+      wireCreateBatchButton();
+      wireAddReminderButton();
+      if (typeof renderAll === "function") renderAll();
+      window.renderResourcesReal();
+      toast("Connected to live data");
+    } catch (e) {
+      toast(e.message || "Could not load live data");
+    }
+  }
+
+  (async function start() {
+    try {
+      await API.get("/auth/me");
+      await boot();
+    } catch (e) {
+      if (e.status === 401) {
+        ensureLoginOverlay();
+      } else {
+        toast("Could not reach the backend: " + (e.message || "unknown error"));
+      }
+    }
+  })();
+})();
+
+</script>
 </body>
 </html>
