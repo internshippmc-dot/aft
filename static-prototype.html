@@ -13273,7 +13273,8 @@ button[onclick^="closeAction23("]{
         product: o.item_count + (o.item_count === 1 ? " item" : " items"),
         variant: "",
         aft: o.box_aft_number || null,
-        status: o.box_aft_number ? "Processing" : "Confirmed · Ready to batch",
+        status: o.stage || (o.box_aft_number ? "Processing" : "Confirmed · Ready to batch"),
+        overrideStatus: o.status_override || "",
         last: "",
         awb: "—",
         split: false,
@@ -13852,13 +13853,64 @@ button[onclick^="closeAction23("]{
   }
 
   // =====================================================================
-  // ORDER STATUS — no manual override in the backend; be honest.
+  // ORDER STATUS — manual per-order override, backed by
+  // orders.status_override (PATCH /orders/{order_number}). Takes priority
+  // over the AFT box's derived stage until cleared.
   // =====================================================================
-  const explainOrderStatus = () =>
-    toast("Order status follows its AFT package's stage automatically — update the AFT package instead of the order.");
+  const ORDER_STATUS_SELECT_IDS = [
+    "orderStatusSelect16",
+    "orderStatusSelect15",
+    "orderStatusSelect14",
+    "orderStatusSelect7",
+    "orderStatusSelect5",
+    "orderStatusSelect4",
+  ];
+  function findOrderStatusSelect() {
+    for (const elId of ORDER_STATUS_SELECT_IDS) {
+      const el = document.getElementById(elId);
+      if (el) return el;
+    }
+    return null;
+  }
+  async function saveOrderStatusReal(id) {
+    const sel = findOrderStatusSelect();
+    if (!sel) {
+      toast("Could not find the status field to save.");
+      return;
+    }
+    const o = orders.find((x) => x.id === id);
+    if (!o) return;
+    const value = sel.value;
+    try {
+      await API.patch("/orders/" + encodeURIComponent(o.rawOrderNumber || bareOrderNumber(id)), {
+        status_override: value,
+      });
+      toast(id + " status updated to " + value);
+      await reloadAndRender();
+      if (typeof window.openOrder15 === "function") window.openOrder15(id);
+    } catch (e) {
+      toast(e.message || "Could not update order status");
+    }
+  }
   ["saveOrderStatus4", "saveOrderStatus5", "saveOrderStatus7", "saveOrderStatus14", "saveOrderStatus15", "saveOrderStatus16"].forEach((name) => {
-    window[name] = explainOrderStatus;
+    window[name] = saveOrderStatusReal;
   });
+  // Clears the override back to "derive from the AFT box" — exposed for a
+  // "Clear override" action if a drawer template wires one up.
+  window.clearOrderStatusOverride = async function (id) {
+    const o = orders.find((x) => x.id === id);
+    if (!o) return;
+    try {
+      await API.patch("/orders/" + encodeURIComponent(o.rawOrderNumber || bareOrderNumber(id)), {
+        status_override: null,
+      });
+      toast(id + " now follows its AFT package's stage again");
+      await reloadAndRender();
+      if (typeof window.openOrder15 === "function") window.openOrder15(id);
+    } catch (e) {
+      toast(e.message || "Could not clear order status override");
+    }
+  };
 
   // ---- order notes: local-only (no backend column) ----
   let activeNoteOrder = null;

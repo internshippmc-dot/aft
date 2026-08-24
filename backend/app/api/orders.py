@@ -16,7 +16,14 @@ from app.models.customer import Customer
 from app.models.order import Order, OrderItem
 from app.models.user import User
 from app.schemas.common import OrderItemOut, ShipmentOut
-from app.schemas.order import LegTimelineEntry, OrderCreateIn, OrderDetail, OrderListItem
+from app.schemas.order import (
+    ORDER_STATUS_OVERRIDES,
+    LegTimelineEntry,
+    OrderCreateIn,
+    OrderDetail,
+    OrderListItem,
+    OrderUpdate,
+)
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 settings = get_settings()
@@ -55,13 +62,15 @@ def list_orders(q: str | None = None, _user: User = Depends(get_current_user), d
         )
     out: list[OrderListItem] = []
     for order in db.scalars(query):
-        box_aft = None
+        box: Box | None = None
         for item in order.items:
             if item.box_item is not None:
-                box_aft = db.get(Box, item.box_item.box_id)
-                box_aft = box_aft.aft_number if box_aft else None
+                box = db.get(Box, item.box_item.box_id)
                 break
         ship = order.ship_address or {}
+        stage = order.status_override or (
+            compute_stage(effective_legs(db, box)) if box else "Awaiting box assignment"
+        )
         out.append(
             OrderListItem(
                 order_number=order.order_number,
@@ -70,8 +79,10 @@ def list_orders(q: str | None = None, _user: User = Depends(get_current_user), d
                 total_inr=order.total_inr,
                 placed_at=order.placed_at,
                 item_count=len(order.items),
-                box_aft_number=box_aft,
+                box_aft_number=box.aft_number if box else None,
                 source="shopify" if order.shopify_order_id else "manual",
+                stage=stage,
+                status_override=order.status_override,
             )
         )
     return out
@@ -111,7 +122,7 @@ def get_order(order_number: str, _user: User = Depends(get_current_user), db: Db
     elapsed_days = (now - placed).days
 
     legs = effective_legs(db, box) if box else {}
-    stage = compute_stage(legs) if box else "Awaiting box assignment"
+    stage = order.status_override or (compute_stage(legs) if box else "Awaiting box assignment")
     eta = build_eta(db, box) if box else None
 
     timeline: list[LegTimelineEntry] = []
@@ -161,11 +172,34 @@ def get_order(order_number: str, _user: User = Depends(get_current_user), db: Db
         box_aft_number=box.aft_number if box else None,
         consignment_tracking_id=box.consignment.tracking_id if box and box.consignment else None,
         stage=stage,
+        status_override=order.status_override,
         timeline=timeline,
         eta=eta,
         sla_risk=sla_risk,
         shipment=shipment_out,
     )
+
+
+@router.patch("/{order_number}", response_model=OrderDetail)
+def update_order(
+    order_number: str, body: OrderUpdate, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
+):
+    order = _find_order(db, order_number)
+    if "status_override" in body.model_fields_set:
+        if body.status_override is not None and body.status_override not in ORDER_STATUS_OVERRIDES:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"status_override must be one of {ORDER_STATUS_OVERRIDES} or null.",
+            )
+        before = {"status_override": order.status_override}
+        order.status_override = body.status_override
+        record_audit(
+            db, request, user, "order.status_override", "order", order.order_number,
+            before=before, after={"status_override": order.status_override},
+        )
+        db.commit()
+    return get_order(order.order_number, user, db)
 
 
 def _first_pending_leg(legs: dict):

@@ -60,7 +60,8 @@ CREATE TABLE orders (
     ship_address    JSONB,
     rto_status      TEXT,
     archived_at     TIMESTAMPTZ,
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    status_override TEXT                        -- manual override; null = derive stage from the linked box's legs
 );
 CREATE INDEX ON orders (placed_at DESC);
 CREATE INDEX ON orders (customer_id);

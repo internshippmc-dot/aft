@@ -45,6 +45,35 @@ class OrderListItem(BaseModel):
     item_count: int
     box_aft_number: str | None
     source: str  # "shopify" | "manual"
+    stage: str
+    status_override: str | None
+
+
+# Kept as its own list (rather than reusing PIPELINE_STAGES) since these are
+# order-facing customer-journey labels, distinct from the AFT box's
+# operational pipeline stages in app/domain/control_tower.py.
+ORDER_STATUS_OVERRIDES = [
+    "Confirmation pending",
+    "Confirmed · Ready to batch",
+    "Manufacturer processing",
+    "Manufacturer → Hexalog",
+    "At Hexalog",
+    "Flight scheduled",
+    "On flight / customs",
+    "Delhi warehouse",
+    "In transit",
+    "Delivered",
+    "Return Scheduled",
+    "Return Intransit",
+    "RTO",
+]
+
+
+class OrderUpdate(BaseModel):
+    """PATCH /orders/{order_number}. None means "not provided"; explicit
+    null clears the override back to deriving stage from the box (checked
+    via model_fields_set, same pattern as BoxUpdate)."""
+    status_override: str | None = None
 
 
 class LegTimelineEntry(BaseModel):
@@ -67,6 +96,7 @@ class OrderDetail(BaseModel):
     box_aft_number: str | None
     consignment_tracking_id: str | None
     stage: str
+    status_override: str | None
     timeline: list[LegTimelineEntry]
     eta: EtaOut | None
     sla_risk: bool
