@@ -61,7 +61,8 @@ CREATE TABLE orders (
     rto_status      TEXT,
     archived_at     TIMESTAMPTZ,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    status_override TEXT                        -- manual override; null = derive stage from the linked box's legs
+    status_override TEXT,                       -- manual override; null = derive stage from the linked box's legs
+    notes           TEXT                        -- internal note, shared across every device/teammate
 );
 CREATE INDEX ON orders (placed_at DESC);
 CREATE INDEX ON orders (customer_id);

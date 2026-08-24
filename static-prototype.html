@@ -13281,7 +13281,7 @@ button[onclick^="closeAction23("]{
         delivered: false,
         orderDate: (o.placed_at || "").slice(0, 10),
         paymentType: "—",
-        notes: localOrderNote(id),
+        notes: o.notes || "",
         flagged: false,
         flagReason: "",
       });
@@ -13912,7 +13912,7 @@ button[onclick^="closeAction23("]{
     }
   };
 
-  // ---- order notes: local-only (no backend column) ----
+  // ---- order notes: shared, backed by orders.notes ----
   let activeNoteOrder = null;
   window.editNoteReal = function (id, e) {
     if (e) {
@@ -13922,28 +13922,39 @@ button[onclick^="closeAction23("]{
     const o = orders.find((x) => x.id === id);
     if (!o) return;
     activeNoteOrder = id;
-    document.getElementById("noteEditTitle").textContent = "Note · " + id + " (saved on this device only)";
+    document.getElementById("noteEditTitle").textContent = "Note · " + id;
     document.getElementById("noteEditText").value = o.notes || "";
     openModal("noteEditModal");
   };
-  window.saveNoteReal = function () {
-    const o = orders.find((x) => x.id === activeNoteOrder);
+  async function patchOrderNotes(id, notes) {
+    const o = orders.find((x) => x.id === id);
     if (!o) return;
-    o.notes = document.getElementById("noteEditText").value.trim();
-    saveLocalOrderNote(o.id, o.notes);
-    closeModal("noteEditModal");
-    toast("Note saved on this device");
-    if (typeof renderAll === "function") renderAll();
+    await API.patch("/orders/" + encodeURIComponent(o.rawOrderNumber || bareOrderNumber(id)), { notes });
+    o.notes = notes;
+  }
+  window.saveNoteReal = async function () {
+    const id = activeNoteOrder;
+    const notes = document.getElementById("noteEditText").value.trim();
+    try {
+      await patchOrderNotes(id, notes || null);
+      closeModal("noteEditModal");
+      toast("Note saved");
+      if (typeof renderAll === "function") renderAll();
+    } catch (e) {
+      toast(e.message || "Could not save note");
+    }
   };
-  window.clearNoteReal = function () {
-    const o = orders.find((x) => x.id === activeNoteOrder);
-    if (!o) return;
-    o.notes = "";
-    saveLocalOrderNote(o.id, "");
-    document.getElementById("noteEditText").value = "";
-    closeModal("noteEditModal");
-    toast("Note cleared");
-    if (typeof renderAll === "function") renderAll();
+  window.clearNoteReal = async function () {
+    const id = activeNoteOrder;
+    try {
+      await patchOrderNotes(id, null);
+      document.getElementById("noteEditText").value = "";
+      closeModal("noteEditModal");
+      toast("Note cleared");
+      if (typeof renderAll === "function") renderAll();
+    } catch (e) {
+      toast(e.message || "Could not clear note");
+    }
   };
   window.editNoteV3 = window.editNoteReal;
   window.saveNoteV3 = window.saveNoteReal;

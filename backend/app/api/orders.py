@@ -83,6 +83,7 @@ def list_orders(q: str | None = None, _user: User = Depends(get_current_user), d
                 source="shopify" if order.shopify_order_id else "manual",
                 stage=stage,
                 status_override=order.status_override,
+                notes=order.notes,
             )
         )
     return out
@@ -173,6 +174,7 @@ def get_order(order_number: str, _user: User = Depends(get_current_user), db: Db
         consignment_tracking_id=box.consignment.tracking_id if box and box.consignment else None,
         stage=stage,
         status_override=order.status_override,
+        notes=order.notes,
         timeline=timeline,
         eta=eta,
         sla_risk=sla_risk,
@@ -186,17 +188,26 @@ def update_order(
     user: User = Depends(require_ops), db: DbSession = Depends(get_db),
 ):
     order = _find_order(db, order_number)
+    before = {"status_override": order.status_override, "notes": order.notes}
+    changed = False
+
     if "status_override" in body.model_fields_set:
         if body.status_override is not None and body.status_override not in ORDER_STATUS_OVERRIDES:
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"status_override must be one of {ORDER_STATUS_OVERRIDES} or null.",
             )
-        before = {"status_override": order.status_override}
         order.status_override = body.status_override
+        changed = True
+
+    if "notes" in body.model_fields_set:
+        order.notes = body.notes
+        changed = True
+
+    if changed:
         record_audit(
-            db, request, user, "order.status_override", "order", order.order_number,
-            before=before, after={"status_override": order.status_override},
+            db, request, user, "order.update", "order", order.order_number,
+            before=before, after={"status_override": order.status_override, "notes": order.notes},
         )
         db.commit()
     return get_order(order.order_number, user, db)

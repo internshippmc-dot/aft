@@ -47,6 +47,7 @@ class OrderListItem(BaseModel):
     source: str  # "shopify" | "manual"
     stage: str
     status_override: str | None
+    notes: str | None
 
 
 # Kept as its own list (rather than reusing PIPELINE_STAGES) since these are
@@ -74,6 +75,7 @@ class OrderUpdate(BaseModel):
     null clears the override back to deriving stage from the box (checked
     via model_fields_set, same pattern as BoxUpdate)."""
     status_override: str | None = None
+    notes: str | None = None
 
 
 class LegTimelineEntry(BaseModel):
@@ -97,6 +99,7 @@ class OrderDetail(BaseModel):
     consignment_tracking_id: str | None
     stage: str
     status_override: str | None
+    notes: str | None
     timeline: list[LegTimelineEntry]
     eta: EtaOut | None
     sla_risk: bool

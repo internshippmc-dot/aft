@@ -25,6 +25,7 @@ class Order(Base):
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default="now()")
     # Manual override; null = derive stage from the linked box's legs (see app/api/orders.py get_order()).
     status_override: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
 
     customer: Mapped["Customer"] = relationship("Customer", back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(
