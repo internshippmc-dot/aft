@@ -1183,7 +1183,15 @@ renderAll();
     <div class="field"><label>Manufacturer</label><input id="newBatchManufacturer" placeholder="Manufacturer name"></div>
     <div class="field"><label>Manufacturer amount paid</label><input id="newBatchAmount" type="number" placeholder="0"></div>
     <div class="field"><label>MF sheet + payment date</label><input id="newAftDate" type="date"></div>
-    <div class="field"><label>Payment made by</label><input id="newBatchPaidBy" placeholder="Your name"></div>`;
+    <div class="field"><label>Payment made by</label><input id="newBatchPaidBy" placeholder="Your name"></div>
+    <div class="field full" style="border-top:1px solid var(--line);margin-top:4px;padding-top:14px">
+      <div class="strong" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Manufacturer → Hexalog shipment (optional)</div>
+    </div>
+    <div class="field"><label>SO No.</label><input id="newSoNumber" placeholder="e.g. HXL/27-28/SZX/096"></div>
+    <div class="field"><label>SO Date</label><input id="newSoDate" type="date"></div>
+    <div class="field"><label>CN Tracking ID</label><input id="newCnTracking" placeholder="e.g. SF1572395806095"></div>
+    <div class="field"><label>Boxes Received</label><input id="newBoxesReceived" type="number" min="0" placeholder="0"></div>
+    <div class="field"><label>SO No. / UTR Qty</label><input id="newSoQty" type="number" min="0" placeholder="0"></div>`;
 
   function openCreateBatchV2(){
     const nums=batches.map(b=>parseInt((b.aft.match(/\d+/)||['0'])[0])).filter(Boolean);
@@ -1191,6 +1199,9 @@ renderAll();
     document.getElementById('newAftCode').value='AFT '+next;
     document.getElementById('newMfCode').value='MF '+next;
     document.getElementById('newAftDate').value=new Date().toISOString().slice(0,10);
+    ['newBatchManufacturer','newBatchAmount','newBatchPaidBy','newSoNumber','newSoDate','newCnTracking','newBoxesReceived','newSoQty'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.value='';
+    });
     const available=orders.filter(o=>!o.aft);
     document.getElementById('unbatchedPicker').innerHTML=available.map((o,i)=>`
       <label class="checkrow"><input type="checkbox" class="batchPick" value="${o.id}" ${i<3?'checked':''}>
@@ -13525,7 +13536,30 @@ button[onclick^="closeAction23("]{
         // shouldn't stop the rest of the batch from queuing.
       }
     }
-    if (queued) toast(queued + " customer message" + (queued === 1 ? "" : "s") + " queued (" + type + ")");
+    if (queued && !generateMessagesForStage._silent) {
+      toast(queued + " customer message" + (queued === 1 ? "" : "s") + " queued (" + type + ")");
+    }
+    return queued;
+  }
+
+  // Backfills messages for AFT batches that already reached their current
+  // stage before this feature existed (or a stage change that happened
+  // outside this app) — otherwise Customer Messages stays permanently
+  // empty for anything that isn't a *brand new* stage transition from here on.
+  let messageCatchUpDone = false;
+  async function catchUpAllMessages() {
+    if (messageCatchUpDone) return;
+    messageCatchUpDone = true;
+    generateMessagesForStage._silent = true;
+    let totalQueued = 0;
+    for (const b of batches) {
+      totalQueued += (await generateMessagesForStage(b.aft, b.stage)) || 0;
+    }
+    generateMessagesForStage._silent = false;
+    if (totalQueued) {
+      toast(totalQueued + " customer message" + (totalQueued === 1 ? "" : "s") + " caught up from existing AFT stages");
+      await loadEverything();
+    }
   }
 
   // =====================================================================
@@ -13905,12 +13939,24 @@ button[onclick^="closeAction23("]{
       const amount = Number((document.getElementById("newBatchAmount") || {}).value || 0);
       const paidBy = (document.getElementById("newBatchPaidBy") || {}).value?.trim() || "Ops";
       const dateVal = (document.getElementById("newAftDate") || {}).value || todayISO();
+      const soNumber = (document.getElementById("newSoNumber") || {}).value?.trim() || null;
+      const soDate = (document.getElementById("newSoDate") || {}).value || null;
+      const cnTracking = (document.getElementById("newCnTracking") || {}).value?.trim() || null;
+      const boxesReceivedVal = (document.getElementById("newBoxesReceived") || {}).value;
+      const soQtyVal = (document.getElementById("newSoQty") || {}).value;
       try {
         const ordersRaw = ids.map(bareOrderNumber).join(",");
         await API.post("/boxes", { aft_number: aft, manufacturer, orders_raw: ordersRaw });
         const towerPatch = { pipeline_stage: "Manufacturer → Hexalog" };
         if (mf) towerPatch.mf_number = mf;
+        if (cnTracking) towerPatch.cn_tracking = cnTracking;
         await API.patch("/control-tower/" + encodeURIComponent(aft), towerPatch);
+        const soPatch = {};
+        if (soNumber) soPatch.so_number = soNumber;
+        if (soDate) soPatch.so_date = soDate;
+        if (boxesReceivedVal !== "") soPatch.boxes_received = Number(boxesReceivedVal);
+        if (soQtyVal !== "") soPatch.so_qty = Number(soQtyVal);
+        if (Object.keys(soPatch).length) await API.patch("/boxes/" + encodeURIComponent(aft), soPatch);
         await generateMessagesForStage(aft, "Manufacturer → Hexalog");
         if (amount > 0) {
           await API.post("/payments", {
@@ -14199,7 +14245,7 @@ button[onclick^="closeAction23("]{
   // =====================================================================
   let addOrderItemCount = 0;
 
-  function addOrderItemRow(prefill) {
+  window.addOrderItemRow = function (prefill) {
     const i = addOrderItemCount++;
     const list = document.getElementById("addOrderItems");
     if (!list) return;
@@ -14217,7 +14263,7 @@ button[onclick^="closeAction23("]{
       i +
       "').remove()\">Remove</button>";
     list.appendChild(row);
-  }
+  };
 
   function ensureAddOrderModal() {
     if (document.getElementById("addOrderModal")) return;
@@ -14894,6 +14940,8 @@ button[onclick^="closeAction23("]{
       window.renderResourcesReal();
       window.renderSecuritySettings();
       toast("Connected to live data");
+      await catchUpAllMessages();
+      if (typeof renderAll === "function") renderAll();
     } catch (e) {
       toast(e.message || "Could not load live data");
     }
