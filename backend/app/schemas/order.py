@@ -67,6 +67,8 @@ ORDER_STATUS_OVERRIDES = [
     "Return Scheduled",
     "Return Intransit",
     "RTO",
+    "On Hold",
+    "Cancelled",
 ]
 
 

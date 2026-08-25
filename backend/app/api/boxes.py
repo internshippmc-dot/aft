@@ -168,23 +168,16 @@ def update_box(
     db: DbSession = Depends(get_db),
 ):
     box = _get_box_or_404(db, aft_number)
-    before = {
-        "manufacturer": box.manufacturer,
-        "gross_weight_kg": str(box.gross_weight_kg) if box.gross_weight_kg is not None else None,
-        "notes": box.notes,
-    }
-    for field in ("manufacturer", "gross_weight_kg", "notes"):
+    fields = ("manufacturer", "gross_weight_kg", "notes", "so_number", "so_date", "boxes_received", "so_qty")
+
+    def _snapshot() -> dict:
+        return {f: str(getattr(box, f)) if getattr(box, f) is not None else None for f in fields}
+
+    before = _snapshot()
+    for field in fields:
         if field in body.model_fields_set:
             setattr(box, field, getattr(body, field))
-    record_audit(
-        db, request, user, "box.update", "box", box.aft_number,
-        before=before,
-        after={
-            "manufacturer": box.manufacturer,
-            "gross_weight_kg": str(box.gross_weight_kg) if box.gross_weight_kg is not None else None,
-            "notes": box.notes,
-        },
-    )
+    record_audit(db, request, user, "box.update", "box", box.aft_number, before=before, after=_snapshot())
     db.commit()
     box = _get_box_or_404(db, aft_number)
     return build_manifest(db, box)

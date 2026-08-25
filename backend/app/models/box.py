@@ -31,6 +31,13 @@ class Box(Base):
     flagged: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     flag_reason: Mapped[str | None] = mapped_column(Text)
 
+    # Manufacturer -> China warehouse shipment tracking sheet. Tracking ID
+    # from that sheet is cn_tracking above; these are its other columns.
+    so_number: Mapped[str | None] = mapped_column(Text)
+    so_date: Mapped[datetime.date | None] = mapped_column()
+    boxes_received: Mapped[int | None] = mapped_column(Integer)
+    so_qty: Mapped[int | None] = mapped_column(Integer)
+
     consignment: Mapped["Consignment | None"] = relationship("Consignment", back_populates="boxes")
     items: Mapped[list["BoxItem"]] = relationship(
         "BoxItem", back_populates="box", cascade="all, delete-orphan"

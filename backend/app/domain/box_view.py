@@ -55,6 +55,10 @@ def build_summary(db: DbSession, box: Box) -> BoxSummary:
         eta=eta,
         sla_risk=_sla_risk(box, eta),
         created_at=box.created_at,
+        so_number=box.so_number,
+        so_date=box.so_date,
+        boxes_received=box.boxes_received,
+        so_qty=box.so_qty,
     )
 
 
@@ -114,4 +118,8 @@ def build_manifest(
         oldest_order_placed_at=_oldest_order_placed_at(box),
         orders=orders_out,
         attach=attach,
+        so_number=box.so_number,
+        so_date=box.so_date,
+        boxes_received=box.boxes_received,
+        so_qty=box.so_qty,
     )

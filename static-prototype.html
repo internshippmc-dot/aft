@@ -652,12 +652,15 @@ function renderAll(){
  renderKpis(); renderActions(); renderMessageSummary(); renderStageBar(); renderBatchRows(); renderKanban(); renderOrders(); renderMessages(); renderTasks(); renderSettings(); updateCounts();
 }
 function renderKpis(){
+ // Stage names match Control Tower's real pipeline_stage vocabulary
+ // (app/domain/control_tower.py PIPELINE_STAGES) — these used to reference
+ // the old prototype's stage names and always read zero as a result.
  const vals=[
   ['Confirmed / Unbatched',orders.filter(o=>!o.aft).length,'Ready for next manufacturer batch'],
-  ['Active AFT Batches',batches.length,'China → India pipeline'],
-  ['At Hexalog',batches.filter(b=>b.stage==='At Hexalog').length,'Packing list / flight planning'],
-  ['China → India',batches.filter(b=>b.stage==='China → India').length,'Cross-border'],
-  ['Last Mile',batches.filter(b=>b.stage==='Last Mile'||b.stage==='Delhi Warehouse').length,'India fulfillment'],
+  ['Active AFT Batches',batches.filter(b=>b.stage!=='Closed').length,'Not yet closed'],
+  ['Sitting in Hexalog',batches.filter(b=>b.stage==='Sitting in Hexalog').length,'Packing list / flight planning'],
+  ['On Flight',batches.filter(b=>b.stage==='On Flight').length,'China → India'],
+  ['In Transit',batches.filter(b=>b.stage==='In Transit'||b.stage==='Delhi Warehouse').length,'India fulfillment'],
   ['Messages Due',messages.filter(m=>m.status==='Pending').length,'Customer updates pending']
  ];
  document.getElementById('kpiGrid').innerHTML=vals.map(v=>`<div class="kpi"><div class="label">${v[0]}</div><div class="value">${v[1]}</div><div class="sub">${v[2]}</div></div>`).join('');
@@ -672,7 +675,17 @@ function renderMessageSummary(){
  document.getElementById('messageSummary').innerHTML=Object.entries(groups).map(([k,v])=>`<div class="action"><span class="sev blue"></span><div><div class="mainline">${esc(k)}</div><div class="meta">${v} customer${v!==1?'s':''} waiting</div></div><div class="right"><span class="pill purple">${v}</span></div></div>`).join('');
 }
 function renderStageBar(){
- const defs=[['Manufacturer',batches.filter(b=>['Batch Created','Sheet Sent','Paid'].includes(b.stage)).length],['CN Transit',batches.filter(b=>b.stage==='Manufacturer → Hexalog').length],['Hexalog',batches.filter(b=>b.stage==='At Hexalog').length],['Flight Planned',batches.filter(b=>b.stage==='Flight Planned').length],['China → India',batches.filter(b=>b.stage==='China → India').length],['Delhi',batches.filter(b=>b.stage==='Delhi Warehouse').length],['Last Mile',batches.filter(b=>b.stage==='Last Mile').length]];
+ // Matches Control Tower's real pipeline_stage values exactly (was matching
+ // the old prototype's stage names, so every bucket except Delhi read zero).
+ const defs=[
+  ['Manufacturer → Hexalog',batches.filter(b=>b.stage==='Manufacturer → Hexalog').length],
+  ['Sitting in Hexalog',batches.filter(b=>b.stage==='Sitting in Hexalog').length],
+  ['On Flight',batches.filter(b=>b.stage==='On Flight').length],
+  ['Delhi Warehouse',batches.filter(b=>b.stage==='Delhi Warehouse').length],
+  ['In Transit',batches.filter(b=>b.stage==='In Transit').length],
+  ['Delivered',batches.filter(b=>b.stage==='Delivered').length],
+  ['Feedback',batches.filter(b=>b.stage==='Feedback').length],
+ ];
  document.getElementById('stageBar').innerHTML=defs.map(x=>`<div class="stagebox" onclick="showView('control')"><div class="n">${x[1]}</div><div class="t">${x[0]}</div></div>`).join('');
 }
 function batchRow(b){
@@ -6048,7 +6061,9 @@ renderAll();
       'Delivered',
       'Return Scheduled',
       'Return Intransit',
-      'RTO'
+      'RTO',
+      'On Hold',
+      'Cancelled'
     ];
 
     document.getElementById('drawerBody').innerHTML=`
@@ -9927,6 +9942,11 @@ renderAll();
           <div><label>CN Tracking</label><input id="a23Tracking" value="${esc23(b.tracking==='—'?'':(b.tracking||''))}"></div>
           <div><label>Day 0 / Batch Order Date</label><input id="a23Day0" type="date" value="${iso23(b.batchOrderDate)}"></div>
 
+          <div><label>SO No. (Manufacturer → Hexalog shipment)</label><input id="a23SoNumber" placeholder="e.g. HXL/27-28/SZX/096" value="${esc23(b.soNumber||'')}"></div>
+          <div><label>SO Date</label><input id="a23SoDate" type="date" value="${iso23(b.soDate)}"></div>
+          <div><label>Boxes Received</label><input id="a23BoxesReceived" type="number" min="0" value="${b.boxesReceived==null?'':b.boxesReceived}"></div>
+          <div><label>SO No. / UTR Qty</label><input id="a23SoQty" type="number" min="0" value="${b.soQty==null?'':b.soQty}"></div>
+
           <div><label>MF Sheet Date</label><input id="a23Sheet" type="date" value="${iso23(b.sheetSentDate)}"></div>
           <div><label>Manufacturer Payment Date</label><input id="a23Payment" type="date" value="${iso23(b.paymentDate)}"></div>
           <div><label>Manufacturer Dispatch Date</label><input id="a23Dispatch" type="date" value="${iso23(b.manufacturerDispatchDate)}"></div>
@@ -10078,6 +10098,8 @@ renderAll();
           <div class="aft20-box-body">
             <div class="aft20-detail"><div class="k">MF Batch / Order Range</div><div class="v">${esc23(b.mf)} · ${esc23(b.orderRange)}</div></div>
             <div class="aft20-detail"><div class="k">CN Manufacturer Tracking</div><div class="v">${esc23(b.tracking||'—')}</div></div>
+            <div class="aft20-detail"><div class="k">SO No. (Manufacturer → Hexalog)</div><div class="v">${esc23(b.soNumber||'—')}${b.soDate?' · '+fmt23(b.soDate):''}</div></div>
+            <div class="aft20-detail"><div class="k">Boxes Received / SO Qty</div><div class="v">${b.boxesReceived==null?'—':b.boxesReceived} / ${b.soQty==null?'—':b.soQty}</div></div>
             <div class="aft20-detail"><div class="k">Packing List</div><div class="v">${esc23(b.aft)} PL · ${esc23(b.plStatus||'Pending')}</div></div>
             <div class="aft20-detail"><div class="k">Hexalog Arrival</div><div class="v">${b.hexalogActualDate?fmt23(b.hexalogActualDate):'Pending'}</div></div>
             <div class="aft20-detail"><div class="k">Planned Flight</div><div class="v">${b.flightDate?fmt23(b.flightDate):'Pending'}</div></div>
@@ -13406,6 +13428,10 @@ button[onclick^="closeAction23("]{
         workflowDay: 0,
         notes: box.notes || "",
         grossWeightKg: box.gross_weight_kg,
+        soNumber: box.so_number || "",
+        soDate: box.so_date || "",
+        boxesReceived: box.boxes_received,
+        soQty: box.so_qty,
         orderRange: "",
         batchOrderDate: (box.created_at || "").slice(0, 10),
         sheetSentDate: localDates.sheetSentDate || null,
@@ -13746,6 +13772,10 @@ button[onclick^="closeAction23("]{
     try {
       const boxPatch = {};
       if (v("a23Manufacturer")) boxPatch.manufacturer = v("a23Manufacturer");
+      if (v("a23SoNumber")) boxPatch.so_number = v("a23SoNumber");
+      if (v("a23SoDate")) boxPatch.so_date = v("a23SoDate");
+      if (v("a23BoxesReceived") !== "") boxPatch.boxes_received = Number(v("a23BoxesReceived"));
+      if (v("a23SoQty") !== "") boxPatch.so_qty = Number(v("a23SoQty"));
       if (Object.keys(boxPatch).length) await API.patch("/boxes/" + encodeURIComponent(aft), boxPatch);
 
       const stage = v("a23Stage");
@@ -13936,10 +13966,33 @@ button[onclick^="closeAction23("]{
         status_override: value,
       });
       toast(id + " status updated to " + value);
+      if (value === "Cancelled") await handleOrderCancelled(o);
       await reloadAndRender();
       if (typeof window.openOrder15 === "function") window.openOrder15(id);
     } catch (e) {
       toast(e.message || "Could not update order status");
+    }
+  }
+
+  // Cancelling an order is a label change on its own — this makes it
+  // actually do something: pending customer messages for it stop being
+  // "due" (they'd be wrong to send now), and if it's still sitting inside
+  // a physical AFT box, that's flagged since cancelling here doesn't pull
+  // it out of a box that may already be packed/shipped.
+  async function handleOrderCancelled(o) {
+    const pending = messages.filter((m) => m.order === o.id && m.status === "Pending");
+    let cleared = 0;
+    for (const m of pending) {
+      try {
+        await API.del("/messages/" + m.id);
+        cleared++;
+      } catch (e) {
+        // one failing shouldn't block the rest
+      }
+    }
+    if (cleared) toast(cleared + " pending message" + (cleared === 1 ? "" : "s") + " cleared for " + o.id);
+    if (o.aft) {
+      toast("⚠ " + o.id + " is cancelled but still inside " + o.aft + " — remove it from the batch if it shouldn't ship.");
     }
   }
   ["saveOrderStatus4", "saveOrderStatus5", "saveOrderStatus7", "saveOrderStatus14", "saveOrderStatus15", "saveOrderStatus16"].forEach((name) => {
@@ -14394,6 +14447,134 @@ button[onclick^="closeAction23("]{
     }
   }
 
+  // =====================================================================
+  // GLOBAL SEARCH — real backend search (GET /search), not just whatever
+  // happens to already be loaded client-side. Debounced as-you-type, with
+  // a results dropdown; Enter jumps straight to the first hit.
+  // =====================================================================
+  function ensureSearchResultsPanel() {
+    if (document.getElementById("af29SearchResults")) return document.getElementById("af29SearchResults");
+    const box = document.querySelector(".search");
+    if (!box) return null;
+    const panel = document.createElement("div");
+    panel.id = "af29SearchResults";
+    panel.style.cssText =
+      "display:none;position:absolute;top:44px;left:0;right:0;background:#fff;border:1px solid var(--line);" +
+      "border-radius:10px;box-shadow:var(--shadow);max-height:360px;overflow:auto;z-index:50";
+    box.appendChild(panel);
+    return panel;
+  }
+  function closeSearchResults() {
+    const panel = document.getElementById("af29SearchResults");
+    if (panel) panel.style.display = "none";
+  }
+  function renderSearchResults(results, q) {
+    const panel = ensureSearchResultsPanel();
+    if (!panel) return;
+    const orderRows = (results.orders || [])
+      .map(
+        (o) =>
+          '<div class="msgrow" style="cursor:pointer;border-radius:0;border-left:none;border-right:none" onclick="af29OpenSearchOrder(\'' +
+          o.order_number.replace(/'/g, "\\'") +
+          '\')"><div><div class="name">' +
+          esc29(o.order_number) +
+          "</div><div class=\"smalltxt\">" +
+          esc29(o.customer_name || "") +
+          '</div></div><div class="smalltxt">' +
+          esc29(o.aft_number ? "AFT " + o.aft_number : "Unbatched") +
+          "</div><div></div><div></div></div>"
+      )
+      .join("");
+    const boxRows = (results.boxes || [])
+      .map(
+        (b) =>
+          '<div class="msgrow" style="cursor:pointer;border-radius:0;border-left:none;border-right:none" onclick="af29OpenSearchBox(\'' +
+          b.aft_number.replace(/'/g, "\\'") +
+          '\')"><div><div class="name">AFT ' +
+          esc29(b.aft_number) +
+          "</div><div class=\"smalltxt\">" +
+          esc29(b.stage) +
+          '</div></div><div class="smalltxt">' +
+          b.order_count +
+          " order" + (b.order_count === 1 ? "" : "s") +
+          "</div><div></div><div></div></div>"
+      )
+      .join("");
+    const hasAny = orderRows || boxRows;
+    panel.innerHTML = hasAny
+      ? (orderRows ? '<div style="padding:8px 12px;font-size:9.5px;font-weight:800;color:#667085;text-transform:uppercase">Orders</div>' + orderRows : "") +
+        (boxRows ? '<div style="padding:8px 12px;font-size:9.5px;font-weight:800;color:#667085;text-transform:uppercase">AFT Batches</div>' + boxRows : "")
+      : '<div class="empty" style="padding:16px">No results for "' + esc29(q) + '"</div>';
+    panel.style.display = "block";
+  }
+  window.af29OpenSearchOrder = function (orderNumber) {
+    closeSearchResults();
+    document.getElementById("globalSearch").value = "";
+    showView("orders");
+    if (typeof window.openOrder15 === "function") window.openOrder15(normOrderId(orderNumber));
+  };
+  window.af29OpenSearchBox = function (aft) {
+    closeSearchResults();
+    document.getElementById("globalSearch").value = "";
+    if (typeof window.openBatch === "function") window.openBatch(aft);
+  };
+  let searchDebounce = null;
+  let searchSeq = 0;
+  async function runGlobalSearch(q) {
+    const mySeq = ++searchSeq;
+    try {
+      const results = await API.get("/search?q=" + encodeURIComponent(q));
+      if (mySeq !== searchSeq) return; // a newer keystroke already superseded this request
+      renderSearchResults(results, q);
+    } catch (e) {
+      closeSearchResults();
+    }
+  }
+  function wireGlobalSearch() {
+    let input = document.getElementById("globalSearch");
+    if (!input || input.dataset.af29Wired) return;
+    // Drop the original client-side-only Enter-key handler — this replaces
+    // it entirely with real backend search.
+    const clone = input.cloneNode(true);
+    input.replaceWith(clone);
+    input = clone;
+    input.dataset.af29Wired = "1";
+    input.addEventListener("input", (e) => {
+      const q = e.target.value.trim();
+      clearTimeout(searchDebounce);
+      if (q.length < 2) {
+        closeSearchResults();
+        return;
+      }
+      searchDebounce = setTimeout(() => runGlobalSearch(q), 250);
+    });
+    input.addEventListener("keydown", async (e) => {
+      if (e.key === "Escape") {
+        closeSearchResults();
+        return;
+      }
+      if (e.key !== "Enter") return;
+      const q = input.value.trim();
+      if (!q) return;
+      clearTimeout(searchDebounce);
+      try {
+        const results = await API.get("/search?q=" + encodeURIComponent(q));
+        if (results.orders && results.orders[0]) {
+          window.af29OpenSearchOrder(results.orders[0].order_number);
+        } else if (results.boxes && results.boxes[0]) {
+          window.af29OpenSearchBox(results.boxes[0].aft_number);
+        } else {
+          toast('No results for "' + q + '"');
+        }
+      } catch (err) {
+        toast(err.message || "Search failed");
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".search")) closeSearchResults();
+    });
+  }
+
   function wireExportButtons() {
     const specs = [
       { view: "#orders", id: "exportOrdersBtn", fn: "exportOrdersCSV" },
@@ -14708,6 +14889,7 @@ button[onclick^="closeAction23("]{
       wireAddOrderButton();
       wireExportButtons();
       wireBulkOrderActions();
+      wireGlobalSearch();
       if (typeof renderAll === "function") renderAll();
       window.renderResourcesReal();
       window.renderSecuritySettings();

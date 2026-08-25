@@ -109,7 +109,13 @@ CREATE TABLE boxes (
     pipeline_stage  TEXT,
     next_action     TEXT,
     flagged         BOOLEAN NOT NULL DEFAULT FALSE,
-    flag_reason     TEXT
+    flag_reason     TEXT,
+    -- Manufacturer -> China warehouse shipment tracking sheet (Tracking ID
+    -- is cn_tracking above; these are the sheet's other columns)
+    so_number       TEXT,                       -- e.g. HXL/27-28/SZX/096
+    so_date         DATE,
+    boxes_received  INTEGER,
+    so_qty          INTEGER
 );
 CREATE INDEX ON boxes (consignment_id);
 CREATE INDEX ON boxes (pipeline_stage);

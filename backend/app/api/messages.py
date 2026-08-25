@@ -76,3 +76,15 @@ def mark_sent(
     db.commit()
     db.refresh(message)
     return _out(message)
+
+
+@router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_message(
+    message_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    message = db.get(CustomerMessage, message_id)
+    if message is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No such message.")
+    record_audit(db, request, user, "message.delete", "customer_message", str(message.id), before={"type": message.type, "status": message.status})
+    db.delete(message)
+    db.commit()
