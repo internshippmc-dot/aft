@@ -109,18 +109,29 @@ CREATE TABLE boxes (
     pipeline_stage  TEXT,
     next_action     TEXT,
     flagged         BOOLEAN NOT NULL DEFAULT FALSE,
-    flag_reason     TEXT,
-    -- Manufacturer -> China warehouse shipment tracking sheet (Tracking ID
-    -- is cn_tracking above; these are the sheet's other columns)
-    so_number       TEXT,                       -- e.g. HXL/27-28/SZX/096
-    so_date         DATE,
-    boxes_received  INTEGER,
-    so_qty          INTEGER
+    flag_reason     TEXT
 );
 CREATE INDEX ON boxes (consignment_id);
 CREATE INDEX ON boxes (pipeline_stage);
 -- the consolidation queue
 CREATE INDEX boxes_unassigned ON boxes (created_at) WHERE consignment_id IS NULL;
+
+-- Manufacturer -> Hexalog shipment intake. Logged the moment a shipment
+-- leaves the manufacturer, before it's known which AFT/flight it'll be
+-- consolidated into. box_id is null until it's actually batched.
+CREATE TABLE manufacturer_shipments (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    manufacturer    TEXT,
+    so_number       TEXT,                       -- e.g. HXL/27-28/SZX/096
+    so_date         DATE,
+    tracking_id     TEXT,                       -- e.g. SF1572395806095
+    boxes_received  INTEGER,
+    so_qty          INTEGER,
+    box_id          BIGINT REFERENCES boxes(id) ON DELETE SET NULL,
+    created_by      BIGINT REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON manufacturer_shipments (box_id);
 
 -- the join that answers "what is in this box"
 CREATE TABLE box_items (

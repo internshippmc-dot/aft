@@ -9,7 +9,7 @@ from app.domain.assignment import _find_order, attach_orders_to_box, detach_item
 from app.domain.box_view import build_manifest, build_summary
 from app.domain.legs import write_leg_event
 from app.domain.orders import create_order
-from app.models.box import Box, BoxItem
+from app.models.box import Box, BoxItem, ManufacturerShipment
 from app.models.leg import LegEvent, LegName, LegScope, LegSource
 from app.models.user import User
 from app.schemas.box import (
@@ -22,6 +22,7 @@ from app.schemas.box import (
     BoxUpdate,
     LegEventCreate,
 )
+from app.schemas.manufacturer_shipment import AttachShipmentsRequest
 
 router = APIRouter(prefix="/boxes", tags=["boxes"])
 
@@ -30,7 +31,32 @@ def _box_options():
     return (
         selectinload(Box.items).selectinload(BoxItem.order_item),
         selectinload(Box.consignment),
+        selectinload(Box.shipments),
     )
+
+
+def _attach_shipments(db: DbSession, box: Box, shipment_ids: list[int]) -> list[int]:
+    """Consolidates already-logged, still-unbatched manufacturer shipments
+    onto this box. Raises 409 if any requested id doesn't exist or is
+    already attached elsewhere — silently grabbing someone else's shipment
+    would misattribute a real physical consignment."""
+    if not shipment_ids:
+        return []
+    rows = db.scalars(select(ManufacturerShipment).where(ManufacturerShipment.id.in_(shipment_ids))).all()
+    found_ids = {r.id for r in rows}
+    missing = [i for i in shipment_ids if i not in found_ids]
+    if missing:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No manufacturer shipment(s) with id {missing}.")
+    already_batched = [r.id for r in rows if r.box_id is not None and r.box_id != box.id]
+    if already_batched:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail=f"Shipment(s) {already_batched} are already attached to another AFT batch.",
+        )
+    for r in rows:
+        r.box_id = box.id
+    db.flush()
+    return [r.id for r in rows]
 
 
 def _get_box_or_404(db: DbSession, aft_number: str) -> Box:
@@ -139,13 +165,16 @@ def create_box(
         result = attach_orders_to_box(db, box, order_numbers, user)
         attach = _attach_result_out(result)
 
+    attached_shipment_ids = _attach_shipments(db, box, body.shipment_ids)
+
     record_audit(
         db, request, user, "box.create", "box", aft,
         after={"aft_number": aft, "manufacturer": body.manufacturer,
                "gross_weight_kg": str(body.gross_weight_kg) if body.gross_weight_kg else None,
                "attached": attach.attached if attach else None,
                "missing": attach.missing if attach else None,
-               "failed": [f.order_number for f in attach.failed] if attach else None},
+               "failed": [f.order_number for f in attach.failed] if attach else None,
+               "shipment_ids": attached_shipment_ids},
     )
 
     db.commit()
@@ -159,6 +188,19 @@ def get_box(aft_number: str, _user: User = Depends(get_current_user), db: DbSess
     return build_manifest(db, box)
 
 
+@router.post("/{aft_number}/shipments", response_model=BoxManifest)
+def attach_shipments(
+    aft_number: str, body: AttachShipmentsRequest, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
+):
+    box = _get_box_or_404(db, aft_number)
+    attached_ids = _attach_shipments(db, box, body.shipment_ids)
+    record_audit(db, request, user, "box.attach_shipments", "box", box.aft_number, after={"shipment_ids": attached_ids})
+    db.commit()
+    box = _get_box_or_404(db, aft_number)
+    return build_manifest(db, box)
+
+
 @router.patch("/{aft_number}", response_model=BoxManifest)
 def update_box(
     aft_number: str,
@@ -168,7 +210,7 @@ def update_box(
     db: DbSession = Depends(get_db),
 ):
     box = _get_box_or_404(db, aft_number)
-    fields = ("manufacturer", "gross_weight_kg", "notes", "so_number", "so_date", "boxes_received", "so_qty")
+    fields = ("manufacturer", "gross_weight_kg", "notes")
 
     def _snapshot() -> dict:
         return {f: str(getattr(box, f)) if getattr(box, f) is not None else None for f in fields}

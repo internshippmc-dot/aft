@@ -9,6 +9,7 @@ from app.domain.stages import BOX_LEGS, compute_stage, effective_legs
 from app.models.box import Box
 from app.schemas.box import AttachResultOut, BoxManifest, BoxSummary, LegsOut, ManifestOrderOut
 from app.schemas.common import EtaOut, OrderItemOut
+from app.schemas.manufacturer_shipment import ManufacturerShipmentOut
 
 settings = get_settings()
 
@@ -55,10 +56,15 @@ def build_summary(db: DbSession, box: Box) -> BoxSummary:
         eta=eta,
         sla_risk=_sla_risk(box, eta),
         created_at=box.created_at,
-        so_number=box.so_number,
-        so_date=box.so_date,
-        boxes_received=box.boxes_received,
-        so_qty=box.so_qty,
+        shipments=[_shipment_out(s) for s in box.shipments],
+    )
+
+
+def _shipment_out(s) -> ManufacturerShipmentOut:
+    return ManufacturerShipmentOut(
+        id=s.id, manufacturer=s.manufacturer, so_number=s.so_number, so_date=s.so_date,
+        tracking_id=s.tracking_id, boxes_received=s.boxes_received, so_qty=s.so_qty,
+        box_aft_number=s.box.aft_number if s.box else None, created_at=s.created_at,
     )
 
 
@@ -117,9 +123,6 @@ def build_manifest(
         value_total=value_total,
         oldest_order_placed_at=_oldest_order_placed_at(box),
         orders=orders_out,
+        shipments=[_shipment_out(s) for s in box.shipments],
         attach=attach,
-        so_number=box.so_number,
-        so_date=box.so_date,
-        boxes_received=box.boxes_received,
-        so_qty=box.so_qty,
     )

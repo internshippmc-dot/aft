@@ -16,6 +16,7 @@ from app.api import (
     consolidation,
     control_tower,
     integrations,
+    manufacturer_shipments,
     messages,
     orders,
     payments,
@@ -131,6 +132,7 @@ app.include_router(tasks.router, prefix="/api/v1")
 app.include_router(resources.router, prefix="/api/v1")
 app.include_router(messages.router, prefix="/api/v1")
 app.include_router(control_tower.router, prefix="/api/v1")
+app.include_router(manufacturer_shipments.router, prefix="/api/v1")
 
 
 @app.get("/")

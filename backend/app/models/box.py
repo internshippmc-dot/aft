@@ -31,16 +31,12 @@ class Box(Base):
     flagged: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     flag_reason: Mapped[str | None] = mapped_column(Text)
 
-    # Manufacturer -> China warehouse shipment tracking sheet. Tracking ID
-    # from that sheet is cn_tracking above; these are its other columns.
-    so_number: Mapped[str | None] = mapped_column(Text)
-    so_date: Mapped[datetime.date | None] = mapped_column()
-    boxes_received: Mapped[int | None] = mapped_column(Integer)
-    so_qty: Mapped[int | None] = mapped_column(Integer)
-
     consignment: Mapped["Consignment | None"] = relationship("Consignment", back_populates="boxes")
     items: Mapped[list["BoxItem"]] = relationship(
         "BoxItem", back_populates="box", cascade="all, delete-orphan"
+    )
+    shipments: Mapped[list["ManufacturerShipment"]] = relationship(
+        "ManufacturerShipment", back_populates="box"
     )
 
 
@@ -59,3 +55,23 @@ class BoxItem(Base):
     order_item: Mapped["OrderItem"] = relationship("OrderItem", back_populates="box_item")
 
     __table_args__ = (CheckConstraint("quantity > 0", name="box_items_quantity_check"),)
+
+
+class ManufacturerShipment(Base):
+    """Logged the moment a shipment leaves the manufacturer for Hexalog,
+    before it's known which AFT/flight it'll be consolidated into.
+    box_id is null until it's actually batched onto one."""
+    __tablename__ = "manufacturer_shipments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    manufacturer: Mapped[str | None] = mapped_column(Text)
+    so_number: Mapped[str | None] = mapped_column(Text)
+    so_date: Mapped[datetime.date | None] = mapped_column()
+    tracking_id: Mapped[str | None] = mapped_column(Text)
+    boxes_received: Mapped[int | None] = mapped_column(Integer)
+    so_qty: Mapped[int | None] = mapped_column(Integer)
+    box_id: Mapped[int | None] = mapped_column(ForeignKey("boxes.id", ondelete="SET NULL"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default="now()")
+
+    box: Mapped["Box | None"] = relationship("Box", back_populates="shipments")

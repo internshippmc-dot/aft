@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.schemas.common import EtaOut, OrderItemOut
+from app.schemas.manufacturer_shipment import ManufacturerShipmentOut
 from app.schemas.order import OrderCreateIn
 
 
@@ -15,6 +16,7 @@ class BoxCreate(BaseModel):
     dispatched_on: datetime.date | None = None
     orders_raw: str | None = None  # bulk paste, PRD F1 + F2 combined at creation
     new_orders: list[OrderCreateIn] = Field(default_factory=list)  # quick-create for pasted-but-unknown numbers
+    shipment_ids: list[int] = Field(default_factory=list)  # consolidate pending manufacturer shipments in at creation
 
 
 class BoxUpdate(BaseModel):
@@ -23,12 +25,6 @@ class BoxUpdate(BaseModel):
     manufacturer: str | None = None
     gross_weight_kg: Decimal | None = None
     notes: str | None = None
-    # Manufacturer -> China warehouse shipment tracking sheet columns.
-    # Tracking ID from that sheet is cn_tracking (ControlTowerUpdate).
-    so_number: str | None = None
-    so_date: datetime.date | None = None
-    boxes_received: int | None = None
-    so_qty: int | None = None
 
 
 class AttachOrdersRequest(BaseModel):
@@ -66,10 +62,7 @@ class BoxSummary(BaseModel):
     eta: EtaOut | None
     sla_risk: bool
     created_at: datetime.datetime
-    so_number: str | None = None
-    so_date: datetime.date | None = None
-    boxes_received: int | None = None
-    so_qty: int | None = None
+    shipments: list[ManufacturerShipmentOut] = Field(default_factory=list)
 
 
 class ManifestOrderOut(BaseModel):
@@ -96,10 +89,7 @@ class BoxManifest(BaseModel):
     value_total: Decimal
     oldest_order_placed_at: datetime.datetime | None
     orders: list[ManifestOrderOut]
-    so_number: str | None = None
-    so_date: datetime.date | None = None
-    boxes_received: int | None = None
-    so_qty: int | None = None
+    shipments: list[ManufacturerShipmentOut] = Field(default_factory=list)
     # set on POST /boxes only, when orders were pasted at creation — lets the
     # drawer report which orders failed to attach instead of silently dropping them
     attach: AttachResultOut | None = None

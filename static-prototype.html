@@ -1183,15 +1183,17 @@ renderAll();
     <div class="field"><label>Manufacturer</label><input id="newBatchManufacturer" placeholder="Manufacturer name"></div>
     <div class="field"><label>Manufacturer amount paid</label><input id="newBatchAmount" type="number" placeholder="0"></div>
     <div class="field"><label>MF sheet + payment date</label><input id="newAftDate" type="date"></div>
-    <div class="field"><label>Payment made by</label><input id="newBatchPaidBy" placeholder="Your name"></div>
-    <div class="field full" style="border-top:1px solid var(--line);margin-top:4px;padding-top:14px">
-      <div class="strong" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Manufacturer → Hexalog shipment (optional)</div>
-    </div>
-    <div class="field"><label>SO No.</label><input id="newSoNumber" placeholder="e.g. HXL/27-28/SZX/096"></div>
-    <div class="field"><label>SO Date</label><input id="newSoDate" type="date"></div>
-    <div class="field"><label>CN Tracking ID</label><input id="newCnTracking" placeholder="e.g. SF1572395806095"></div>
-    <div class="field"><label>Boxes Received</label><input id="newBoxesReceived" type="number" min="0" placeholder="0"></div>
-    <div class="field"><label>SO No. / UTR Qty</label><input id="newSoQty" type="number" min="0" placeholder="0"></div>`;
+    <div class="field"><label>Payment made by</label><input id="newBatchPaidBy" placeholder="Your name"></div>`;
+
+  // Picker for pending "logged but not yet on a flight" manufacturer
+  // shipments — consolidated onto this AFT at creation. Injected once,
+  // right after the existing unbatched-orders picker.
+  if(!document.getElementById('shipmentPicker')){
+    document.getElementById('unbatchedPicker').insertAdjacentHTML('afterend',
+      '<div class="strong" style="font-size:12px;margin:14px 0 7px">Manufacturer → Hexalog shipments to include (optional)</div>' +
+      '<div id="shipmentPicker"></div>'
+    );
+  }
 
   function openCreateBatchV2(){
     const nums=batches.map(b=>parseInt((b.aft.match(/\d+/)||['0'])[0])).filter(Boolean);
@@ -1199,7 +1201,7 @@ renderAll();
     document.getElementById('newAftCode').value='AFT '+next;
     document.getElementById('newMfCode').value='MF '+next;
     document.getElementById('newAftDate').value=new Date().toISOString().slice(0,10);
-    ['newBatchManufacturer','newBatchAmount','newBatchPaidBy','newSoNumber','newSoDate','newCnTracking','newBoxesReceived','newSoQty'].forEach(id=>{
+    ['newBatchManufacturer','newBatchAmount','newBatchPaidBy'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.value='';
     });
     const available=orders.filter(o=>!o.aft);
@@ -1207,6 +1209,7 @@ renderAll();
       <label class="checkrow"><input type="checkbox" class="batchPick" value="${o.id}" ${i<3?'checked':''}>
       <div class="grow"><div class="title">${o.id} · ${o.product}</div><div class="sub">${o.name} · ${o.variant}</div></div>
       <span class="pill amber">Ready</span></label>`).join('')||'<div class="empty">No confirmed unbatched items.</div>';
+    if(typeof window.loadUnbatchedShipmentsPicker==='function') window.loadUnbatchedShipmentsPicker();
     openModal('batchModal');
   }
 
@@ -9953,11 +9956,6 @@ renderAll();
           <div><label>CN Tracking</label><input id="a23Tracking" value="${esc23(b.tracking==='—'?'':(b.tracking||''))}"></div>
           <div><label>Day 0 / Batch Order Date</label><input id="a23Day0" type="date" value="${iso23(b.batchOrderDate)}"></div>
 
-          <div><label>SO No. (Manufacturer → Hexalog shipment)</label><input id="a23SoNumber" placeholder="e.g. HXL/27-28/SZX/096" value="${esc23(b.soNumber||'')}"></div>
-          <div><label>SO Date</label><input id="a23SoDate" type="date" value="${iso23(b.soDate)}"></div>
-          <div><label>Boxes Received</label><input id="a23BoxesReceived" type="number" min="0" value="${b.boxesReceived==null?'':b.boxesReceived}"></div>
-          <div><label>SO No. / UTR Qty</label><input id="a23SoQty" type="number" min="0" value="${b.soQty==null?'':b.soQty}"></div>
-
           <div><label>MF Sheet Date</label><input id="a23Sheet" type="date" value="${iso23(b.sheetSentDate)}"></div>
           <div><label>Manufacturer Payment Date</label><input id="a23Payment" type="date" value="${iso23(b.paymentDate)}"></div>
           <div><label>Manufacturer Dispatch Date</label><input id="a23Dispatch" type="date" value="${iso23(b.manufacturerDispatchDate)}"></div>
@@ -10111,11 +10109,23 @@ renderAll();
           <div class="aft20-box-body">
             <div class="aft20-detail"><div class="k">MF Batch / Order Range</div><div class="v">${esc23(b.mf)} · ${esc23(b.orderRange)}</div></div>
             <div class="aft20-detail"><div class="k">CN Manufacturer Tracking</div><div class="v">${esc23(b.tracking||'—')}</div></div>
-            <div class="aft20-detail"><div class="k">SO No. (Manufacturer → Hexalog)</div><div class="v">${esc23(b.soNumber||'—')}${b.soDate?' · '+fmt23(b.soDate):''}</div></div>
-            <div class="aft20-detail"><div class="k">Boxes Received / SO Qty</div><div class="v">${b.boxesReceived==null?'—':b.boxesReceived} / ${b.soQty==null?'—':b.soQty}</div></div>
             <div class="aft20-detail"><div class="k">Packing List</div><div class="v">${esc23(b.aft)} PL · ${esc23(b.plStatus||'Pending')}</div></div>
             <div class="aft20-detail"><div class="k">Hexalog Arrival</div><div class="v">${b.hexalogActualDate?fmt23(b.hexalogActualDate):'Pending'}</div></div>
             <div class="aft20-detail"><div class="k">Planned Flight</div><div class="v">${b.flightDate?fmt23(b.flightDate):'Pending'}</div></div>
+          </div>
+        </div>
+
+        <div class="aft20-box-card" style="margin-top:14px">
+          <div class="aft20-box-head">
+            <h3>Manufacturer → Hexalog Shipments</h3>
+            <button class="btn small" onclick="openAttachShipmentModal('${b.aft}')">+ Attach Shipment</button>
+          </div>
+          <div class="aft20-box-body">
+            ${(b.shipments&&b.shipments.length) ? b.shipments.map(s=>`
+              <div class="aft20-detail">
+                <div class="k">${esc23(s.so_number||'SO —')}${s.so_date?' · '+fmt23(s.so_date):''}</div>
+                <div class="v">Tracking: ${esc23(s.tracking_id||'—')} · Boxes: ${s.boxes_received==null?'—':s.boxes_received} · Qty: ${s.so_qty==null?'—':s.so_qty}${s.manufacturer?' · '+esc23(s.manufacturer):''}</div>
+              </div>`).join('') : '<div class="empty" style="padding:10px 0">No manufacturer shipments attached to this AFT yet.</div>'}
           </div>
         </div>
       </div>
@@ -13441,10 +13451,7 @@ button[onclick^="closeAction23("]{
         workflowDay: 0,
         notes: box.notes || "",
         grossWeightKg: box.gross_weight_kg,
-        soNumber: box.so_number || "",
-        soDate: box.so_date || "",
-        boxesReceived: box.boxes_received,
-        soQty: box.so_qty,
+        shipments: box.shipments || [],
         orderRange: "",
         batchOrderDate: (box.created_at || "").slice(0, 10),
         sheetSentDate: localDates.sheetSentDate || null,
@@ -13869,10 +13876,6 @@ button[onclick^="closeAction23("]{
     try {
       const boxPatch = {};
       if (v("a23Manufacturer")) boxPatch.manufacturer = v("a23Manufacturer");
-      if (v("a23SoNumber")) boxPatch.so_number = v("a23SoNumber");
-      if (v("a23SoDate")) boxPatch.so_date = v("a23SoDate");
-      if (v("a23BoxesReceived") !== "") boxPatch.boxes_received = Number(v("a23BoxesReceived"));
-      if (v("a23SoQty") !== "") boxPatch.so_qty = Number(v("a23SoQty"));
       if (Object.keys(boxPatch).length) await API.patch("/boxes/" + encodeURIComponent(aft), boxPatch);
 
       const stage = v("a23Stage");
@@ -14002,24 +14005,15 @@ button[onclick^="closeAction23("]{
       const amount = Number((document.getElementById("newBatchAmount") || {}).value || 0);
       const paidBy = (document.getElementById("newBatchPaidBy") || {}).value?.trim() || "Ops";
       const dateVal = (document.getElementById("newAftDate") || {}).value || todayISO();
-      const soNumber = (document.getElementById("newSoNumber") || {}).value?.trim() || null;
-      const soDate = (document.getElementById("newSoDate") || {}).value || null;
-      const cnTracking = (document.getElementById("newCnTracking") || {}).value?.trim() || null;
-      const boxesReceivedVal = (document.getElementById("newBoxesReceived") || {}).value;
-      const soQtyVal = (document.getElementById("newSoQty") || {}).value;
+      const shipmentIds = [...document.querySelectorAll(".shipmentPick:checked")].map((x) => Number(x.value));
       try {
         const ordersRaw = ids.map(bareOrderNumber).join(",");
-        await API.post("/boxes", { aft_number: aft, manufacturer, orders_raw: ordersRaw });
+        const boxBody = { aft_number: aft, manufacturer, orders_raw: ordersRaw };
+        if (shipmentIds.length) boxBody.shipment_ids = shipmentIds;
+        await API.post("/boxes", boxBody);
         const towerPatch = { pipeline_stage: "Manufacturer → Hexalog" };
         if (mf) towerPatch.mf_number = mf;
-        if (cnTracking) towerPatch.cn_tracking = cnTracking;
         await API.patch("/control-tower/" + encodeURIComponent(aft), towerPatch);
-        const soPatch = {};
-        if (soNumber) soPatch.so_number = soNumber;
-        if (soDate) soPatch.so_date = soDate;
-        if (boxesReceivedVal !== "") soPatch.boxes_received = Number(boxesReceivedVal);
-        if (soQtyVal !== "") soPatch.so_qty = Number(soQtyVal);
-        if (Object.keys(soPatch).length) await API.patch("/boxes/" + encodeURIComponent(aft), soPatch);
         await generateMessagesForStage(aft, "Manufacturer → Hexalog");
         if (amount > 0) {
           await API.post("/payments", {
@@ -14412,6 +14406,179 @@ button[onclick^="closeAction23("]{
     } catch (e) {
       errBox.textContent = e.message || "Could not create order";
       errBox.style.display = "block";
+    }
+  }
+
+  // =====================================================================
+  // MANUFACTURER SHIPMENTS — logged the moment a shipment leaves the
+  // manufacturer for Hexalog, before anyone knows which AFT/flight it'll
+  // eventually be consolidated into. Consolidation into an AFT (assigning
+  // the actual AFT number) happens later, via the Create AFT Batch picker
+  // or "+ Attach Shipment" on an existing batch.
+  // =====================================================================
+  window.loadUnbatchedShipmentsPicker = async function () {
+    const holder = document.getElementById("shipmentPicker");
+    if (!holder) return;
+    try {
+      const rows = await API.get("/manufacturer-shipments?unbatched=true");
+      holder.innerHTML =
+        rows
+          .map(
+            (s) =>
+              '<label class="checkrow"><input type="checkbox" class="shipmentPick" value="' +
+              s.id +
+              '"><div class="grow"><div class="title">' +
+              esc29(s.so_number || "SO —") +
+              (s.so_date ? " · " + esc29(s.so_date) : "") +
+              '</div><div class="sub">Tracking: ' +
+              esc29(s.tracking_id || "—") +
+              " · Boxes: " +
+              (s.boxes_received == null ? "—" : s.boxes_received) +
+              " · Qty: " +
+              (s.so_qty == null ? "—" : s.so_qty) +
+              (s.manufacturer ? " · " + esc29(s.manufacturer) : "") +
+              "</div></div></label>"
+          )
+          .join("") || '<div class="empty">No unbatched manufacturer shipments logged yet.</div>';
+    } catch (e) {
+      holder.innerHTML = '<div class="empty">Could not load pending shipments.</div>';
+    }
+  };
+
+  function ensureLogShipmentModal() {
+    if (document.getElementById("logShipmentModal")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="logShipmentModal"><div class="modal" style="width:min(560px,95vw)">' +
+        '<div class="modalhead"><h3>Log Manufacturer Shipment</h3><button class="btn close" onclick="closeModal(\'logShipmentModal\')">×</button></div>' +
+        '<div class="modalbody">' +
+        '<p class="muted" style="font-size:11px;margin:0 0 14px">Record what left the manufacturer for Hexalog. No AFT code needed yet — you\'ll consolidate this into a batch later, once you know which flight it\'s going on.</p>' +
+        '<div class="formgrid">' +
+        '<div class="field"><label>Manufacturer</label><input id="lsManufacturer" placeholder="Manufacturer name"></div>' +
+        '<div class="field"><label>SO No.</label><input id="lsSoNumber" placeholder="e.g. HXL/27-28/SZX/096"></div>' +
+        '<div class="field"><label>SO Date</label><input id="lsSoDate" type="date"></div>' +
+        '<div class="field"><label>Tracking ID</label><input id="lsTracking" placeholder="e.g. SF1572395806095"></div>' +
+        '<div class="field"><label>Boxes Received</label><input id="lsBoxes" type="number" min="0" placeholder="0"></div>' +
+        '<div class="field"><label>SO No. / UTR Qty</label><input id="lsQty" type="number" min="0" placeholder="0"></div>' +
+        "</div></div>" +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'logShipmentModal\')">Cancel</button>' +
+        '<button class="btn primary" id="logShipmentSaveBtn">Log Shipment</button></div>' +
+        "</div></div>"
+    );
+    document.getElementById("logShipmentSaveBtn").addEventListener("click", saveLogShipment);
+  }
+  window.openLogShipmentModal = function () {
+    ensureLogShipmentModal();
+    ["lsManufacturer", "lsSoNumber", "lsSoDate", "lsTracking", "lsBoxes", "lsQty"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    document.getElementById("lsSoDate").value = todayISO();
+    openModal("logShipmentModal");
+  };
+  async function saveLogShipment() {
+    const g = (id) => (document.getElementById(id) ? document.getElementById(id).value : "");
+    const body = {
+      manufacturer: g("lsManufacturer").trim() || null,
+      so_number: g("lsSoNumber").trim() || null,
+      so_date: g("lsSoDate") || null,
+      tracking_id: g("lsTracking").trim() || null,
+      boxes_received: g("lsBoxes") !== "" ? Number(g("lsBoxes")) : null,
+      so_qty: g("lsQty") !== "" ? Number(g("lsQty")) : null,
+    };
+    try {
+      await API.post("/manufacturer-shipments", body);
+      closeModal("logShipmentModal");
+      toast("Shipment logged — consolidate it into an AFT batch when ready");
+    } catch (e) {
+      toast(e.message || "Could not log shipment");
+    }
+  }
+
+  function ensureAttachShipmentModal() {
+    if (document.getElementById("attachShipmentModal")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="attachShipmentModal"><div class="modal" style="width:min(560px,95vw)">' +
+        '<div class="modalhead"><h3>Attach Manufacturer Shipment</h3><button class="btn close" onclick="closeModal(\'attachShipmentModal\')">×</button></div>' +
+        '<div class="modalbody"><div id="attachShipmentList"></div></div>' +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'attachShipmentModal\')">Cancel</button>' +
+        '<button class="btn primary" id="attachShipmentSaveBtn">Attach Selected</button></div>' +
+        "</div></div>"
+    );
+    wireAttachShipmentButton();
+  }
+  let attachShipmentTargetAft = null;
+  window.openAttachShipmentModal = async function (aft) {
+    ensureAttachShipmentModal();
+    attachShipmentTargetAft = aft;
+    const holder = document.getElementById("attachShipmentList");
+    holder.innerHTML = '<div class="empty">Loading…</div>';
+    openModal("attachShipmentModal");
+    try {
+      const rows = await API.get("/manufacturer-shipments?unbatched=true");
+      holder.innerHTML =
+        rows
+          .map(
+            (s) =>
+              '<label class="checkrow"><input type="checkbox" class="attachShipmentPick" value="' +
+              s.id +
+              '"><div class="grow"><div class="title">' +
+              esc29(s.so_number || "SO —") +
+              (s.so_date ? " · " + esc29(s.so_date) : "") +
+              '</div><div class="sub">Tracking: ' +
+              esc29(s.tracking_id || "—") +
+              " · Boxes: " +
+              (s.boxes_received == null ? "—" : s.boxes_received) +
+              " · Qty: " +
+              (s.so_qty == null ? "—" : s.so_qty) +
+              "</div></div></label>"
+          )
+          .join("") || '<div class="empty">No unbatched manufacturer shipments available.</div>';
+    } catch (e) {
+      holder.innerHTML = '<div class="empty">Could not load pending shipments.</div>';
+    }
+  };
+  function wireAttachShipmentButton() {
+    const btn = document.getElementById("attachShipmentSaveBtn");
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", async () => {
+      const ids = [...document.querySelectorAll(".attachShipmentPick:checked")].map((x) => Number(x.value));
+      if (!ids.length || !attachShipmentTargetAft) {
+        toast("Select at least one shipment");
+        return;
+      }
+      try {
+        await API.post("/boxes/" + encodeURIComponent(attachShipmentTargetAft) + "/shipments", { shipment_ids: ids });
+        toast(ids.length + " shipment" + (ids.length === 1 ? "" : "s") + " attached to " + attachShipmentTargetAft);
+        closeModal("attachShipmentModal");
+        await reloadAndRender();
+        if (typeof window.openBatch === "function") window.openBatch(attachShipmentTargetAft);
+      } catch (e) {
+        toast(e.message || "Could not attach shipment(s)");
+      }
+    });
+  }
+
+  function wireLogShipmentButton() {
+    const pagehead = document.querySelector("#batches .pagehead");
+    if (!pagehead || document.getElementById("logShipmentTopBtn")) return;
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.id = "logShipmentTopBtn";
+    btn.textContent = "+ Log Manufacturer Shipment";
+    btn.addEventListener("click", () => window.openLogShipmentModal());
+    const existingBtn = pagehead.lastElementChild;
+    if (existingBtn && existingBtn !== pagehead.firstElementChild) {
+      const wrapper = document.createElement("div");
+      wrapper.style.display = "flex";
+      wrapper.style.gap = "8px";
+      existingBtn.replaceWith(wrapper);
+      wrapper.appendChild(btn);
+      wrapper.appendChild(existingBtn);
+    } else {
+      pagehead.appendChild(btn);
     }
   }
 
@@ -14998,6 +15165,7 @@ button[onclick^="closeAction23("]{
       wireAddOrderButton();
       wireExportButtons();
       wireBulkOrderActions();
+      wireLogShipmentButton();
       wireGlobalSearch();
       if (typeof renderAll === "function") renderAll();
       window.renderResourcesReal();
