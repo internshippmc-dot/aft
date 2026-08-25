@@ -133,6 +133,22 @@ CREATE TABLE manufacturer_shipments (
 );
 CREATE INDEX ON manufacturer_shipments (box_id);
 
+-- Stock/inventory bought without a specific customer order behind it (e.g.
+-- "50 handbags" purchased speculatively) but riding in the same AFT box.
+CREATE TABLE box_stock_items (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    box_id          BIGINT NOT NULL REFERENCES boxes(id) ON DELETE CASCADE,
+    product_title   TEXT NOT NULL,
+    colour          TEXT,
+    size            TEXT,
+    quantity        INTEGER NOT NULL CHECK (quantity > 0),
+    unit_price_inr  NUMERIC(12,2),
+    notes           TEXT,
+    created_by      BIGINT REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON box_stock_items (box_id);
+
 -- the join that answers "what is in this box"
 CREATE TABLE box_items (
     box_id          BIGINT NOT NULL REFERENCES boxes(id) ON DELETE CASCADE,

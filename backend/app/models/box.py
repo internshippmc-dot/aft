@@ -38,6 +38,9 @@ class Box(Base):
     shipments: Mapped[list["ManufacturerShipment"]] = relationship(
         "ManufacturerShipment", back_populates="box"
     )
+    stock_items: Mapped[list["BoxStockItem"]] = relationship(
+        "BoxStockItem", back_populates="box", cascade="all, delete-orphan"
+    )
 
 
 class BoxItem(Base):
@@ -75,3 +78,24 @@ class ManufacturerShipment(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default="now()")
 
     box: Mapped["Box | None"] = relationship("Box", back_populates="shipments")
+
+
+class BoxStockItem(Base):
+    """Stock/inventory bought without a specific customer order behind it
+    (e.g. "50 handbags" purchased speculatively) but riding in this AFT box."""
+    __tablename__ = "box_stock_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    box_id: Mapped[int] = mapped_column(ForeignKey("boxes.id", ondelete="CASCADE"), nullable=False)
+    product_title: Mapped[str] = mapped_column(Text, nullable=False)
+    colour: Mapped[str | None] = mapped_column(Text)
+    size: Mapped[str | None] = mapped_column(Text)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price_inr: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default="now()")
+
+    box: Mapped["Box"] = relationship("Box", back_populates="stock_items")
+
+    __table_args__ = (CheckConstraint("quantity > 0", name="box_stock_items_quantity_check"),)

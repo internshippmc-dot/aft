@@ -8,6 +8,7 @@ from app.domain.eta import predict
 from app.domain.stages import BOX_LEGS, compute_stage, effective_legs
 from app.models.box import Box
 from app.schemas.box import AttachResultOut, BoxManifest, BoxSummary, LegsOut, ManifestOrderOut
+from app.schemas.box_stock_item import BoxStockItemOut
 from app.schemas.common import EtaOut, OrderItemOut
 from app.schemas.manufacturer_shipment import ManufacturerShipmentOut
 
@@ -57,6 +58,7 @@ def build_summary(db: DbSession, box: Box) -> BoxSummary:
         sla_risk=_sla_risk(box, eta),
         created_at=box.created_at,
         shipments=[_shipment_out(s) for s in box.shipments],
+        stock_items=[_stock_item_out(i) for i in box.stock_items],
     )
 
 
@@ -65,6 +67,13 @@ def _shipment_out(s) -> ManufacturerShipmentOut:
         id=s.id, manufacturer=s.manufacturer, so_number=s.so_number, so_date=s.so_date,
         tracking_id=s.tracking_id, boxes_received=s.boxes_received, so_qty=s.so_qty,
         box_aft_number=s.box.aft_number if s.box else None, created_at=s.created_at,
+    )
+
+
+def _stock_item_out(i) -> BoxStockItemOut:
+    return BoxStockItemOut(
+        id=i.id, product_title=i.product_title, colour=i.colour, size=i.size,
+        quantity=i.quantity, unit_price_inr=i.unit_price_inr, notes=i.notes,
     )
 
 
@@ -124,5 +133,6 @@ def build_manifest(
         oldest_order_placed_at=_oldest_order_placed_at(box),
         orders=orders_out,
         shipments=[_shipment_out(s) for s in box.shipments],
+        stock_items=[_stock_item_out(i) for i in box.stock_items],
         attach=attach,
     )

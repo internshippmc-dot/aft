@@ -10069,6 +10069,7 @@ renderAll();
         <button class="btn small" onclick="toggleAftEdit23('${b.aft}')">✎ Edit Package</button>
         <button class="btn small" onclick="openReminderFor('${b.aft}')">+ Reminder</button>
         <button class="flag-btn ${b.flagged?'flagged':''}" onclick="toggleFlagV3('batch','${b.aft}',event)">⚑ Priority</button>
+        <button class="btn small" style="border-color:#f3c7c4;color:#b42318" onclick="deleteBatchReal('${b.aft}')">🗑 Delete Batch</button>
       </div>
 
       ${renderQuickAdvance(b)}
@@ -10126,6 +10127,23 @@ renderAll();
                 <div class="k">${esc23(s.so_number||'SO —')}${s.so_date?' · '+fmt23(s.so_date):''}</div>
                 <div class="v">Tracking: ${esc23(s.tracking_id||'—')} · Boxes: ${s.boxes_received==null?'—':s.boxes_received} · Qty: ${s.so_qty==null?'—':s.so_qty}${s.manufacturer?' · '+esc23(s.manufacturer):''}</div>
               </div>`).join('') : '<div class="empty" style="padding:10px 0">No manufacturer shipments attached to this AFT yet.</div>'}
+          </div>
+        </div>
+
+        <div class="aft20-box-card" style="margin-top:14px">
+          <div class="aft20-box-head">
+            <h3>Stock / Non-Order Items</h3>
+            <button class="btn small" onclick="openAddStockItemModal('${b.aft}')">+ Add Stock Item</button>
+          </div>
+          <div class="aft20-box-body">
+            ${(b.stockItems&&b.stockItems.length) ? b.stockItems.map(i=>`
+              <div class="aft20-detail" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <div>
+                  <div class="k">${esc23(i.product_title)}${i.colour?' · '+esc23(i.colour):''}${i.size?' · '+esc23(i.size):''}</div>
+                  <div class="v">Qty: ${i.quantity}${i.unit_price_inr?' · ₹'+Number(i.unit_price_inr).toLocaleString('en-IN')+' each':''}${i.notes?' · '+esc23(i.notes):''}</div>
+                </div>
+                <button class="btn small" style="border-color:#f3c7c4;color:#b42318;flex-shrink:0" onclick="deleteStockItemReal('${b.aft}',${i.id})">Delete</button>
+              </div>`).join('') : '<div class="empty" style="padding:10px 0">No stock/inventory items on this AFT yet.</div>'}
           </div>
         </div>
       </div>
@@ -13452,6 +13470,7 @@ button[onclick^="closeAction23("]{
         notes: box.notes || "",
         grossWeightKg: box.gross_weight_kg,
         shipments: box.shipments || [],
+        stockItems: box.stock_items || [],
         orderRange: "",
         batchOrderDate: (box.created_at || "").slice(0, 10),
         sheetSentDate: localDates.sheetSentDate || null,
@@ -14557,6 +14576,100 @@ button[onclick^="closeAction23("]{
         if (typeof window.openBatch === "function") window.openBatch(attachShipmentTargetAft);
       } catch (e) {
         toast(e.message || "Could not attach shipment(s)");
+      }
+    });
+  }
+
+  window.deleteBatchReal = async function (aft) {
+    if (!confirm("Delete AFT batch " + aft + "? Orders inside it go back to unbatched — they are NOT deleted. Payments, messages, and manufacturer shipments linked to it survive too, just unlinked. This cannot be undone.")) return;
+    try {
+      await API.del("/boxes/" + encodeURIComponent(aft));
+      toast(aft + " deleted");
+      closeDrawer();
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not delete batch");
+    }
+  };
+
+  window.deleteStockItemReal = async function (aft, itemId) {
+    if (!confirm("Remove this stock item?")) return;
+    try {
+      await API.del("/boxes/" + encodeURIComponent(aft) + "/stock-items/" + itemId);
+      toast("Stock item removed");
+      await reloadAndRender();
+      if (typeof window.openBatch === "function") window.openBatch(aft);
+    } catch (e) {
+      toast(e.message || "Could not remove stock item");
+    }
+  };
+
+  function ensureAddStockItemModal() {
+    if (document.getElementById("addStockItemModal")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="addStockItemModal"><div class="modal" style="width:min(480px,95vw)">' +
+        '<div class="modalhead"><h3>Add Stock / Non-Order Item</h3><button class="btn close" onclick="closeModal(\'addStockItemModal\')">×</button></div>' +
+        '<div class="modalbody">' +
+        '<div class="field"><label>Product *</label><input id="stockItemProduct" placeholder="e.g. Handbag"></div>' +
+        '<div class="field" style="display:flex;gap:8px">' +
+        '<div style="flex:1"><label>Colour</label><input id="stockItemColour"></div>' +
+        '<div style="flex:1"><label>Size</label><input id="stockItemSize"></div>' +
+        "</div>" +
+        '<div class="field" style="display:flex;gap:8px">' +
+        '<div style="flex:1"><label>Quantity *</label><input id="stockItemQty" type="number" min="1" value="1"></div>' +
+        '<div style="flex:1"><label>Unit Price (₹)</label><input id="stockItemPrice" type="number" min="0" step="0.01"></div>' +
+        "</div>" +
+        '<div class="field"><label>Notes</label><input id="stockItemNotes" placeholder="e.g. Speculative stock buy"></div>' +
+        "</div>" +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'addStockItemModal\')">Cancel</button>' +
+        '<button class="btn primary" id="addStockItemSaveBtn">Add Item</button></div>' +
+        "</div></div>"
+    );
+    wireAddStockItemButton();
+  }
+  let addStockItemTargetAft = null;
+  window.openAddStockItemModal = function (aft) {
+    ensureAddStockItemModal();
+    addStockItemTargetAft = aft;
+    ["stockItemProduct", "stockItemColour", "stockItemSize", "stockItemNotes"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    const qtyEl = document.getElementById("stockItemQty");
+    if (qtyEl) qtyEl.value = "1";
+    const priceEl = document.getElementById("stockItemPrice");
+    if (priceEl) priceEl.value = "";
+    openModal("addStockItemModal");
+  };
+  function wireAddStockItemButton() {
+    const btn = document.getElementById("addStockItemSaveBtn");
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", async () => {
+      const product = (document.getElementById("stockItemProduct").value || "").trim();
+      const qty = Number(document.getElementById("stockItemQty").value || 1);
+      if (!product || !addStockItemTargetAft) {
+        toast("Product and AFT are required");
+        return;
+      }
+      const priceRaw = document.getElementById("stockItemPrice").value;
+      const body = {
+        product_title: product,
+        colour: document.getElementById("stockItemColour").value || null,
+        size: document.getElementById("stockItemSize").value || null,
+        quantity: qty,
+        unit_price_inr: priceRaw ? Number(priceRaw) : null,
+        notes: document.getElementById("stockItemNotes").value || null,
+      };
+      try {
+        await API.post("/boxes/" + encodeURIComponent(addStockItemTargetAft) + "/stock-items", body);
+        toast("Stock item added to " + addStockItemTargetAft);
+        closeModal("addStockItemModal");
+        await reloadAndRender();
+        if (typeof window.openBatch === "function") window.openBatch(addStockItemTargetAft);
+      } catch (e) {
+        toast(e.message || "Could not add stock item");
       }
     });
   }

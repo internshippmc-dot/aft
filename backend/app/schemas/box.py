@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.box_stock_item import BoxStockItemOut
 from app.schemas.common import EtaOut, OrderItemOut
 from app.schemas.manufacturer_shipment import ManufacturerShipmentOut
 from app.schemas.order import OrderCreateIn
@@ -63,6 +64,7 @@ class BoxSummary(BaseModel):
     sla_risk: bool
     created_at: datetime.datetime
     shipments: list[ManufacturerShipmentOut] = Field(default_factory=list)
+    stock_items: list[BoxStockItemOut] = Field(default_factory=list)
 
 
 class ManifestOrderOut(BaseModel):
@@ -90,6 +92,7 @@ class BoxManifest(BaseModel):
     oldest_order_placed_at: datetime.datetime | None
     orders: list[ManifestOrderOut]
     shipments: list[ManufacturerShipmentOut] = Field(default_factory=list)
+    stock_items: list[BoxStockItemOut] = Field(default_factory=list)
     # set on POST /boxes only, when orders were pasted at creation — lets the
     # drawer report which orders failed to attach instead of silently dropping them
     attach: AttachResultOut | None = None

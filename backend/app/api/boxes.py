@@ -9,7 +9,7 @@ from app.domain.assignment import _find_order, attach_orders_to_box, detach_item
 from app.domain.box_view import build_manifest, build_summary
 from app.domain.legs import write_leg_event
 from app.domain.orders import create_order
-from app.models.box import Box, BoxItem, ManufacturerShipment
+from app.models.box import Box, BoxItem, BoxStockItem, ManufacturerShipment
 from app.models.leg import LegEvent, LegName, LegScope, LegSource
 from app.models.user import User
 from app.schemas.box import (
@@ -22,6 +22,7 @@ from app.schemas.box import (
     BoxUpdate,
     LegEventCreate,
 )
+from app.schemas.box_stock_item import BoxStockItemCreate
 from app.schemas.manufacturer_shipment import AttachShipmentsRequest
 
 router = APIRouter(prefix="/boxes", tags=["boxes"])
@@ -32,6 +33,7 @@ def _box_options():
         selectinload(Box.items).selectinload(BoxItem.order_item),
         selectinload(Box.consignment),
         selectinload(Box.shipments),
+        selectinload(Box.stock_items),
     )
 
 
@@ -188,6 +190,25 @@ def get_box(aft_number: str, _user: User = Depends(get_current_user), db: DbSess
     return build_manifest(db, box)
 
 
+@router.delete("/{aft_number}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_box(
+    aft_number: str, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    """Deletes the AFT batch itself, not what's inside it: orders in it go
+    back to unbatched (box_items cascades), and any payments, customer
+    messages, or manufacturer shipments linked to it survive — they just
+    lose the AFT reference (all SET NULL, per schema.sql)."""
+    box = _get_box_or_404(db, aft_number)
+    before = {
+        "aft_number": box.aft_number,
+        "manufacturer": box.manufacturer,
+        "order_count": len({bi.order_item.order_id for bi in box.items}),
+    }
+    record_audit(db, request, user, "box.delete", "box", box.aft_number, before=before)
+    db.delete(box)
+    db.commit()
+
+
 @router.post("/{aft_number}/shipments", response_model=BoxManifest)
 def attach_shipments(
     aft_number: str, body: AttachShipmentsRequest, request: Request,
@@ -196,6 +217,45 @@ def attach_shipments(
     box = _get_box_or_404(db, aft_number)
     attached_ids = _attach_shipments(db, box, body.shipment_ids)
     record_audit(db, request, user, "box.attach_shipments", "box", box.aft_number, after={"shipment_ids": attached_ids})
+    db.commit()
+    box = _get_box_or_404(db, aft_number)
+    return build_manifest(db, box)
+
+
+@router.post("/{aft_number}/stock-items", response_model=BoxManifest, status_code=status.HTTP_201_CREATED)
+def add_stock_item(
+    aft_number: str, body: BoxStockItemCreate, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
+):
+    """Stock/inventory bought without a specific customer order behind it
+    (e.g. handbags bought speculatively) but riding in this AFT box."""
+    box = _get_box_or_404(db, aft_number)
+    item = BoxStockItem(
+        box_id=box.id, product_title=body.product_title, colour=body.colour, size=body.size,
+        quantity=body.quantity, unit_price_inr=body.unit_price_inr, notes=body.notes, created_by=user.id,
+    )
+    db.add(item)
+    db.flush()
+    record_audit(
+        db, request, user, "box.stock_item_add", "box", box.aft_number,
+        after={"product_title": body.product_title, "quantity": body.quantity},
+    )
+    db.commit()
+    box = _get_box_or_404(db, aft_number)
+    return build_manifest(db, box)
+
+
+@router.delete("/{aft_number}/stock-items/{item_id}", response_model=BoxManifest)
+def delete_stock_item(
+    aft_number: str, item_id: int, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
+):
+    box = _get_box_or_404(db, aft_number)
+    item = next((i for i in box.stock_items if i.id == item_id), None)
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No stock item {item_id} on {aft_number}.")
+    record_audit(db, request, user, "box.stock_item_delete", "box", box.aft_number, before={"product_title": item.product_title})
+    db.delete(item)
     db.commit()
     box = _get_box_or_404(db, aft_number)
     return build_manifest(db, box)
