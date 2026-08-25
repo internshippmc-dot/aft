@@ -10073,6 +10073,8 @@ renderAll();
         <button class="flag-btn ${b.flagged?'flagged':''}" onclick="toggleFlagV3('batch','${b.aft}',event)">⚑ Priority</button>
       </div>
 
+      ${renderQuickAdvance(b)}
+
       <div class="aft20-metrics">
         <div class="aft20-metric"><div class="label">Manufacturer</div><div class="value">${esc23(b.manufacturer||'—')}</div></div>
         <div class="aft20-metric"><div class="label">Amount Paid</div><div class="value">₹${Number(b.amountPaid||0).toLocaleString('en-IN')}</div></div>
@@ -13561,6 +13563,67 @@ button[onclick^="closeAction23("]{
       await loadEverything();
     }
   }
+
+  // =====================================================================
+  // QUICK ADVANCE — one-click "it's there now" buttons instead of hunting
+  // through ~19 date fields in the edit form for a routine update. Stamps
+  // today's date on the relevant leg automatically and advances the stage.
+  // =====================================================================
+  const STAGE_ORDER = [
+    "Manufacturer → Hexalog",
+    "Sitting in Hexalog",
+    "On Flight",
+    "Delhi Warehouse",
+    "In Transit",
+    "Delivered",
+    "Feedback",
+    "Closed",
+  ];
+  const QUICK_ADVANCE_STEPS = {
+    "Manufacturer → Hexalog": { label: "✓ Reached Hexalog", leg: "CN_WAREHOUSE" },
+    "Sitting in Hexalog": { label: "✓ Flight Departed", leg: "FLIGHT" },
+    "On Flight": { label: "✓ Reached Delhi", leg: "DELHI_WAREHOUSE" },
+    "Delhi Warehouse": { label: "✓ Out for Last-Mile Delivery", leg: null },
+    "In Transit": { label: "✓ Delivered", leg: null },
+    Delivered: { label: "✓ Feedback Collected", leg: null },
+    Feedback: { label: "✓ Close Batch", leg: null },
+  };
+  function renderQuickAdvance(b) {
+    const step = QUICK_ADVANCE_STEPS[b.stage];
+    if (!step) return "";
+    const idx = STAGE_ORDER.indexOf(b.stage);
+    const next = STAGE_ORDER[idx + 1];
+    if (!next) return "";
+    return (
+      '<div class="nextaction" style="margin-bottom:12px">' +
+      '<div class="l">NEXT STEP</div>' +
+      '<div class="v" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      "<span>" + esc23(next) + "</span>" +
+      '<button class="btn primary small" onclick="quickAdvanceStage(\'' +
+      b.aft +
+      "', '" +
+      next +
+      "', '" +
+      (step.leg || "") +
+      '\')">' +
+      step.label +
+      "</button>" +
+      "</div></div>"
+    );
+  }
+  window.quickAdvanceStage = async function (aft, nextStage, leg) {
+    try {
+      const today = todayISO();
+      await API.patch("/control-tower/" + encodeURIComponent(aft), { pipeline_stage: nextStage });
+      if (leg) await API.post("/boxes/" + encodeURIComponent(aft) + "/legs", { leg, occurred_on: today });
+      await generateMessagesForStage(aft, nextStage);
+      toast(aft + " → " + nextStage);
+      await reloadAndRender();
+      if (typeof window.openBatch === "function") window.openBatch(aft);
+    } catch (e) {
+      toast(e.message || "Could not advance " + aft);
+    }
+  };
 
   // =====================================================================
   // RESOURCES (Other Links & SOPs) — full real CRUD, replaces V26's
