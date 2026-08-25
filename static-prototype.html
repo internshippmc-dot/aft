@@ -653,7 +653,7 @@ function renderAll(){
 }
 function renderKpis(){
  const vals=[
-  ['Confirmed / Unbatched',orders.filter(o=>!o.aft&&o.status.startsWith('Confirmed')).length,'Ready for next manufacturer batch'],
+  ['Confirmed / Unbatched',orders.filter(o=>!o.aft).length,'Ready for next manufacturer batch'],
   ['Active AFT Batches',batches.length,'China → India pipeline'],
   ['At Hexalog',batches.filter(b=>b.stage==='At Hexalog').length,'Packing list / flight planning'],
   ['China → India',batches.filter(b=>b.stage==='China → India').length,'Cross-border'],
@@ -707,12 +707,12 @@ function renderKanban(){
 function applyOrderFilter(){
  const q=(document.getElementById('orderSearch').value||'').toLowerCase(), f=document.getElementById('orderFilter').value;
  let os=orders.filter(o=>!q||JSON.stringify(o).toLowerCase().includes(q));
- if(f==='unbatched') os=os.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));
+ if(f==='unbatched') os=os.filter(o=>!o.aft);
  if(f==='split') os=os.filter(o=>o.split);
  if(f==='delivered') os=os.filter(o=>o.delivered);
  document.getElementById('orderRows').innerHTML=os.map(o=>`<tr><td class="strong">${o.id}</td><td>${o.name}<div class="muted">${o.phone}</div></td><td>${o.product}</td><td>${o.variant}</td><td>${o.aft?`<span class="pill blue" style="cursor:pointer" onclick="openBatch('${o.aft}')">${o.aft}</span>`:'<span class="pill amber">Unbatched</span>'}</td><td>${o.status}${o.split?'<div><span class="pill red">Split order</span></div>':''}</td><td>${o.last}</td><td>${o.awb}</td></tr>`).join('');
 }
-function renderOrders(){applyOrderFilter();document.getElementById('unbatchedCount').textContent=orders.filter(o=>!o.aft&&o.status.startsWith('Confirmed')).length+' ready to batch'}
+function renderOrders(){applyOrderFilter();document.getElementById('unbatchedCount').textContent=orders.filter(o=>!o.aft).length+' ready to batch'}
 ['orderSearch','orderFilter'].forEach(id=>document.getElementById(id).addEventListener('input',applyOrderFilter));
 
 function renderMessages(){
@@ -819,7 +819,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 function openCreateBatch(){
  const nums=batches.map(b=>parseInt(b.aft.replace(/\D/g,''))).filter(Boolean),next=Math.max(...nums)+1;
  document.getElementById('newAftCode').value='AFT '+next;document.getElementById('newAftDate').value=TODAY;
- const available=orders.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));
+ const available=orders.filter(o=>!o.aft);
  document.getElementById('unbatchedPicker').innerHTML=available.map((o,i)=>`<label class="checkrow"><input type="checkbox" class="batchPick" value="${o.id}" ${i<3?'checked':''}><div class="grow"><div class="title">${o.id} · ${o.product}</div><div class="sub">${o.name} · ${o.variant}</div></div><span class="pill amber">Ready</span></label>`).join('')||'<div class="empty">No confirmed unbatched items.</div>';
  openModal('batchModal');
 }
@@ -997,7 +997,7 @@ renderAll();
   applyOrderFilter=function(){
     const q=(document.getElementById('orderSearch').value||'').toLowerCase(),f=document.getElementById('orderFilter').value;
     let os=orders.filter(o=>!q||JSON.stringify(o).toLowerCase().includes(q));
-    if(f==='unbatched')os=os.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));if(f==='split')os=os.filter(o=>o.split);if(f==='delivered')os=os.filter(o=>o.delivered);
+    if(f==='unbatched')os=os.filter(o=>!o.aft);if(f==='split')os=os.filter(o=>o.split);if(f==='delivered')os=os.filter(o=>o.delivered);
     document.getElementById('orderRows').innerHTML=os.map(o=>{
       const b=batches.find(x=>x.aft===o.aft), due=messages.find(m=>m.order===o.id&&m.status==='Pending');
       return `<tr class="clickable" onclick="openOrderV2('${o.id}')"><td class="strong">${o.id}</td><td>${o.name}<div class="muted">${o.phone}</div></td><td>${o.product}<div class="muted">${o.variant}</div></td><td>${b?`<span class="pill blue">${b.aft}</span> <span class="pill grey">${b.mf}</span>`:'<span class="pill amber">Unbatched</span>'}</td><td>${b?b.stage:o.status}</td><td>${b?'Day '+b.workflowDay:'Day 0–1'}</td><td>${due?`<span class="pill purple">${due.type} due</span>`:'<span class="pill grey">No message due</span>'}</td><td>${o.awb}</td></tr>`;
@@ -1178,7 +1178,7 @@ renderAll();
     document.getElementById('newAftCode').value='AFT '+next;
     document.getElementById('newMfCode').value='MF '+next;
     document.getElementById('newAftDate').value=new Date().toISOString().slice(0,10);
-    const available=orders.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));
+    const available=orders.filter(o=>!o.aft);
     document.getElementById('unbatchedPicker').innerHTML=available.map((o,i)=>`
       <label class="checkrow"><input type="checkbox" class="batchPick" value="${o.id}" ${i<3?'checked':''}>
       <div class="grow"><div class="title">${o.id} · ${o.product}</div><div class="sub">${o.name} · ${o.variant}</div></div>
@@ -1313,7 +1313,7 @@ renderAll();
   applyOrderFilter=function(){
     const q=(document.getElementById('orderSearch').value||'').toLowerCase(),f=document.getElementById('orderFilter').value;
     let os=orders.filter(o=>!q||JSON.stringify(o).toLowerCase().includes(q));
-    if(f==='unbatched')os=os.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));
+    if(f==='unbatched')os=os.filter(o=>!o.aft);
     if(f==='split')os=os.filter(o=>o.split);
     if(f==='delivered')os=os.filter(o=>o.delivered);
     os=os.slice().sort((a,b)=>b.orderDate.localeCompare(a.orderDate)||parseInt(b.id.slice(1))-parseInt(a.id.slice(1)));
@@ -1646,7 +1646,7 @@ renderAll();
   function applyOrderFilterV3(){
     const q=(document.getElementById('orderSearch').value||'').toLowerCase(),f=document.getElementById('orderFilter').value;
     let os=orders.filter(o=>!q||JSON.stringify(o).toLowerCase().includes(q));
-    if(f==='unbatched')os=os.filter(o=>!o.aft&&o.status.startsWith('Confirmed'));
+    if(f==='unbatched')os=os.filter(o=>!o.aft);
     if(f==='split')os=os.filter(o=>o.split);
     if(f==='delivered')os=os.filter(o=>o.delivered);
     os=os.slice().sort((a,b)=>(b.orderDate||'').localeCompare(a.orderDate||'')||parseInt(b.id.slice(1))-parseInt(a.id.slice(1)));
@@ -7471,6 +7471,7 @@ renderAll();
           </div>
 
           <div class="af-savebar19">
+            <button class="btn" style="border-color:#f3c7c4;color:#b42318" onclick="deletePaymentReal('${esc19(p.id)}')">Delete Payment</button>
             <button class="btn primary" onclick="savePayment19('${esc19(p.id)}')">Save Changes</button>
           </div>
         </div>
@@ -7669,6 +7670,7 @@ renderAll();
           </div>
 
           <div class="af-savebar19">
+            <button class="btn" style="border-color:#f3c7c4;color:#b42318" onclick="deleteReturnReal('${esc19(r.id)}')">Delete Case</button>
             <button class="btn" onclick="openReturnOrder19('${esc19(r.order)}')">Open Order</button>
             <button class="btn primary" onclick="saveReturn19('${esc19(r.id)}')">Save Changes</button>
           </div>
@@ -10756,6 +10758,7 @@ button[onclick^="closeAction23("]{
       </div>
 
       <div style="display:flex;gap:7px;justify-content:flex-end">
+        <button class="btn" style="border-color:#f3c7c4;color:#b42318" onclick="deleteTaskReal('${t.id}')">Delete</button>
         ${t.status==='Open'
           ? `<button class="btn primary" onclick="markTaskDone25('${t.id}')">✓ Mark Done</button>`
           : `<button class="btn" onclick="reopenTask25('${t.id}')">Reopen</button>`}
@@ -13458,6 +13461,48 @@ button[onclick^="closeAction23("]{
   window.af29Reload = reloadAndRender;
 
   // =====================================================================
+  // AUTO CUSTOMER MESSAGES — moving an AFT batch to a new pipeline stage
+  // queues the matching customer-message template (see `templates` above)
+  // for every order in that batch, exactly like the original prototype:
+  // it shows up Pending on Customer Messages, and "Mark Sent" (already
+  // real, PATCH /messages/{id}/sent) is the "click it done" step.
+  // =====================================================================
+  const STAGE_MESSAGE_TYPE = {
+    "Manufacturer → Hexalog": "Factory Dispatch",
+    "Sitting in Hexalog": "China Warehouse",
+    "On Flight": "Flight Update",
+    "Delhi Warehouse": "Delhi Warehouse",
+    "In Transit": "Tracking Link",
+    Delivered: "Delivered",
+    Feedback: "Feedback",
+  };
+  async function generateMessagesForStage(aft, stage) {
+    const type = STAGE_MESSAGE_TYPE[stage];
+    if (!type) return; // "Closed" and any unrecognized stage queue nothing
+    let manifest;
+    try {
+      manifest = await API.get("/boxes/" + encodeURIComponent(aft));
+    } catch (e) {
+      return; // box vanished or not reachable — nothing to queue against
+    }
+    const orderNumbers = (manifest.orders || []).map((o) => o.order_number);
+    let queued = 0;
+    for (const orderNumber of orderNumbers) {
+      const id = normOrderId(orderNumber);
+      const alreadyQueued = messages.some((m) => m.order === id && m.type === type);
+      if (alreadyQueued) continue;
+      try {
+        await API.post("/messages", { order_number: orderNumber, type });
+        queued++;
+      } catch (e) {
+        // one order failing (e.g. already has this message from a race)
+        // shouldn't stop the rest of the batch from queuing.
+      }
+    }
+    if (queued) toast(queued + " customer message" + (queued === 1 ? "" : "s") + " queued (" + type + ")");
+  }
+
+  // =====================================================================
   // RESOURCES (Other Links & SOPs) — full real CRUD, replaces V26's
   // localStorage-backed implementation end to end.
   // =====================================================================
@@ -13704,10 +13749,12 @@ button[onclick^="closeAction23("]{
       if (Object.keys(boxPatch).length) await API.patch("/boxes/" + encodeURIComponent(aft), boxPatch);
 
       const stage = v("a23Stage");
+      const stageChanged = stage && stage !== b.stage;
       const towerPatch = { pipeline_stage: stage };
       if (v("a23Mf")) towerPatch.mf_number = v("a23Mf");
       if (v("a23Tracking")) towerPatch.cn_tracking = v("a23Tracking");
       await API.patch("/control-tower/" + encodeURIComponent(aft), towerPatch);
+      if (stageChanged) await generateMessagesForStage(aft, stage);
 
       const legWrites = [
         ["MFG_DISPATCH", v("a23Dispatch")],
@@ -13768,6 +13815,8 @@ button[onclick^="closeAction23("]{
         toast("#" + orderNumber + " does not exist yet — create it first, then attach it.");
       } else {
         toast(normOrderId(orderNumber) + " added to " + aft);
+        const b = batches.find((x) => x.aft === aft);
+        if (b) await generateMessagesForStage(aft, b.stage);
       }
       await reloadAndRender();
       if (typeof window.openBatch === "function") window.openBatch(aft);
@@ -13832,6 +13881,7 @@ button[onclick^="closeAction23("]{
         const towerPatch = { pipeline_stage: "Manufacturer → Hexalog" };
         if (mf) towerPatch.mf_number = mf;
         await API.patch("/control-tower/" + encodeURIComponent(aft), towerPatch);
+        await generateMessagesForStage(aft, "Manufacturer → Hexalog");
         if (amount > 0) {
           await API.post("/payments", {
             occurred_on: dateVal,
@@ -13995,10 +14045,42 @@ button[onclick^="closeAction23("]{
   };
   window.savePaymentV2 = window.savePaymentReal;
 
-  window.savePayment19 = function () {
-    toast("Editing an existing payment isn't supported by the backend yet — record a correction as a new payment entry.");
+  window.savePayment19 = async function (id) {
+    const g = (elId) => (document.getElementById(elId) ? document.getElementById(elId).value : "");
+    const p = (window.paymentsV2 || []).find((x) => String(x.id) === String(id));
+    if (!p) return;
+    const body = {
+      occurred_on: g("pay19Date") || undefined,
+      type: g("pay19Type") || undefined,
+      payee: g("pay19To").trim() || undefined,
+      reference: g("pay19Ref").trim() || null,
+      amount_inr: g("pay19Amount") ? Number(g("pay19Amount")) : undefined,
+      paid_by: g("pay19By").trim() || undefined,
+      method: g("pay19Method").trim() || null,
+      notes: g("pay19Notes").trim() || null,
+    };
+    try {
+      await API.patch("/payments/" + encodeURIComponent(id), body);
+      toast("Payment updated");
+      await reloadAndRender();
+      if (typeof window.openPayment19 === "function") window.openPayment19(id);
+    } catch (e) {
+      toast(e.message || "Could not update payment");
+    }
   };
   window.savePayment18 = window.savePayment19;
+
+  window.deletePaymentReal = async function (id) {
+    if (!confirm("Delete this payment record? This cannot be undone.")) return;
+    try {
+      await API.del("/payments/" + encodeURIComponent(id));
+      toast("Payment deleted");
+      closeDrawer();
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not delete payment");
+    }
+  };
 
   // =====================================================================
   // RETURNS / EXCHANGES
@@ -14045,6 +14127,305 @@ button[onclick^="closeAction23("]{
   };
   window.saveReturn19 = window.saveReturnEditReal;
   window.saveReturn18 = window.saveReturnEditReal;
+
+  window.deleteReturnReal = async function (id) {
+    if (!confirm("Delete this return/exchange case? This cannot be undone.")) return;
+    try {
+      await API.del("/returns/" + id);
+      toast("Case deleted");
+      closeDrawer();
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not delete case");
+    }
+  };
+
+  // =====================================================================
+  // ADD ORDER — manual order entry, saved for real via POST /orders
+  // (same endpoint the AFT-batch quick-create already used).
+  // =====================================================================
+  let addOrderItemCount = 0;
+
+  function addOrderItemRow(prefill) {
+    const i = addOrderItemCount++;
+    const list = document.getElementById("addOrderItems");
+    if (!list) return;
+    const row = document.createElement("div");
+    row.className = "checkrow";
+    row.id = "addOrderItemRow" + i;
+    row.innerHTML =
+      '<div class="grow"><div class="formgrid">' +
+      '<div class="field"><label>Product</label><input id="aoProduct' + i + '" placeholder="Product title"></div>' +
+      '<div class="field"><label>Colour / Size</label><input id="aoVariant' + i + '" placeholder="e.g. Black / M"></div>' +
+      '<div class="field"><label>Qty</label><input id="aoQty' + i + '" type="number" min="1" value="1"></div>' +
+      '<div class="field"><label>Unit Price (₹)</label><input id="aoPrice' + i + '" type="number" min="0"></div>' +
+      "</div></div>" +
+      '<button class="btn small" style="align-self:flex-start" onclick="document.getElementById(\'addOrderItemRow' +
+      i +
+      "').remove()\">Remove</button>";
+    list.appendChild(row);
+  }
+
+  function ensureAddOrderModal() {
+    if (document.getElementById("addOrderModal")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="addOrderModal"><div class="modal" style="width:min(680px,95vw)">' +
+        '<div class="modalhead"><h3>Add Order</h3><button class="btn close" onclick="closeModal(\'addOrderModal\')">×</button></div>' +
+        '<div class="modalbody">' +
+        '<div class="formgrid" style="margin-bottom:14px">' +
+        '<div class="field"><label>Order Number</label><input id="aoOrderNumber" placeholder="#2239"></div>' +
+        '<div class="field"><label>Customer Name</label><input id="aoCustomerName" placeholder="Customer name"></div>' +
+        '<div class="field"><label>Phone</label><input id="aoPhone" placeholder="98XXXXXXXX"></div>' +
+        '<div class="field"><label>City</label><input id="aoCity" placeholder="City"></div>' +
+        "</div>" +
+        '<div class="strong" style="font-size:12px;margin-bottom:7px">Line items</div>' +
+        '<div id="addOrderItems"></div>' +
+        '<button class="btn small" onclick="addOrderItemRow()">+ Add another item</button>' +
+        '<div id="addOrderError" style="color:#b42318;font-size:11px;margin-top:10px;display:none"></div>' +
+        "</div>" +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'addOrderModal\')">Cancel</button>' +
+        '<button class="btn primary" id="addOrderSaveBtn">Create Order</button></div>' +
+        "</div></div>"
+    );
+    document.getElementById("addOrderSaveBtn").addEventListener("click", saveAddOrder);
+  }
+
+  window.openAddOrderModal = function () {
+    ensureAddOrderModal();
+    ["aoOrderNumber", "aoCustomerName", "aoPhone", "aoCity"].forEach((id) => (document.getElementById(id).value = ""));
+    document.getElementById("addOrderItems").innerHTML = "";
+    addOrderItemCount = 0;
+    addOrderItemRow();
+    document.getElementById("addOrderError").style.display = "none";
+    openModal("addOrderModal");
+  };
+
+  async function saveAddOrder() {
+    const errBox = document.getElementById("addOrderError");
+    errBox.style.display = "none";
+    const orderNumber = document.getElementById("aoOrderNumber").value.trim();
+    const customerName = document.getElementById("aoCustomerName").value.trim();
+    const phone = document.getElementById("aoPhone").value.trim();
+    const city = document.getElementById("aoCity").value.trim();
+    if (!orderNumber || !customerName) {
+      errBox.textContent = "Order number and customer name are required.";
+      errBox.style.display = "block";
+      return;
+    }
+    const items = [];
+    document.querySelectorAll('#addOrderItems [id^="aoProduct"]').forEach((el) => {
+      const i = el.id.replace("aoProduct", "");
+      const product_title = el.value.trim();
+      if (!product_title) return;
+      const variant = (document.getElementById("aoVariant" + i).value || "").trim();
+      const parts = variant.split("/").map((s) => s.trim());
+      const qty = parseInt(document.getElementById("aoQty" + i).value, 10) || 1;
+      const priceVal = document.getElementById("aoPrice" + i).value;
+      items.push({
+        product_title,
+        colour: parts.length === 2 ? parts[0] : null,
+        size: parts.length === 2 ? parts[1] : variant || null,
+        quantity: qty,
+        unit_price_inr: priceVal ? Number(priceVal) : null,
+      });
+    });
+    if (!items.length) {
+      errBox.textContent = "Add at least one line item with a product title.";
+      errBox.style.display = "block";
+      return;
+    }
+    try {
+      await API.post("/orders", {
+        order_number: orderNumber,
+        customer_name: customerName,
+        phone: phone || null,
+        city: city || null,
+        items,
+      });
+      closeModal("addOrderModal");
+      toast(orderNumber + " created");
+      await reloadAndRender();
+      showView("orders");
+    } catch (e) {
+      errBox.textContent = e.message || "Could not create order";
+      errBox.style.display = "block";
+    }
+  }
+
+  function wireAddOrderButton() {
+    const pagehead = document.querySelector("#orders .pagehead");
+    if (!pagehead || document.getElementById("addOrderTopBtn")) return;
+    pagehead.insertAdjacentHTML(
+      "beforeend",
+      '<button class="btn primary" id="addOrderTopBtn" onclick="openAddOrderModal()">+ Add Order</button>'
+    );
+  }
+
+  // =====================================================================
+  // CSV EXPORT — client-side, no backend round trip needed.
+  // =====================================================================
+  function csvCell(v) {
+    const s = v === null || v === undefined ? "" : String(v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  function downloadCSV(filename, headers, rows) {
+    const lines = [headers.map(csvCell).join(",")].concat(rows.map((r) => r.map(csvCell).join(",")));
+    const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  window.exportOrdersCSV = function () {
+    downloadCSV(
+      "orders-" + todayISO() + ".csv",
+      ["Order", "Customer", "Phone", "Product", "Payment Type", "Order Date", "AFT", "Status", "Notes"],
+      orders.map((o) => [o.id, o.name, o.phone, o.product, o.paymentType, o.orderDate, o.aft || "", o.overrideStatus || o.status, o.notes || ""])
+    );
+  };
+  window.exportPaymentsCSV = function () {
+    downloadCSV(
+      "payments-" + todayISO() + ".csv",
+      ["Date", "Type", "Paid To", "Reference", "Amount (INR)", "Paid By", "Method", "Notes"],
+      (window.paymentsV2 || []).map((p) => [p.date, p.type, p.to, p.ref, p.amount, p.by, p.method, p.notes])
+    );
+  };
+  window.exportReturnsCSV = function () {
+    downloadCSV(
+      "returns-" + todayISO() + ".csv",
+      ["Case", "Order", "Customer", "Type", "Reason", "Status", "Requested", "Next Action", "Notes"],
+      (window.returnsV2 || []).map((r) => [r.id, r.order, r.customer, r.type, r.reason, r.status, r.requested, r.next, r.notes])
+    );
+  };
+  // =====================================================================
+  // BULK ACTIONS — add multiple orders to an existing AFT at once from
+  // the Orders page, reusing POST /boxes/{aft}/items (already supports a
+  // comma-separated orders_raw list).
+  // =====================================================================
+  function ensureBulkBatchModal() {
+    if (document.getElementById("bulkBatchModal")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="bulkBatchModal"><div class="modal" style="width:min(560px,95vw)">' +
+        '<div class="modalhead"><h3>Add Orders to an AFT Batch</h3><button class="btn close" onclick="closeModal(\'bulkBatchModal\')">×</button></div>' +
+        '<div class="modalbody">' +
+        '<div class="field" style="margin-bottom:12px"><label>AFT Batch</label><select id="bulkBatchAft"></select></div>' +
+        '<div class="field" style="margin-bottom:12px"><label>Order numbers (comma or newline separated)</label>' +
+        '<textarea id="bulkBatchOrders" rows="6" placeholder="#2231, #2232, #2233"></textarea></div>' +
+        '<div id="bulkBatchError" style="color:#b42318;font-size:11px;display:none"></div>' +
+        "</div>" +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'bulkBatchModal\')">Cancel</button>' +
+        '<button class="btn primary" id="bulkBatchSaveBtn">Add to Batch</button></div>' +
+        "</div></div>"
+    );
+    document.getElementById("bulkBatchSaveBtn").addEventListener("click", saveBulkBatch);
+  }
+
+  window.openBulkBatchModal = function (prefillIds) {
+    ensureBulkBatchModal();
+    const sel = document.getElementById("bulkBatchAft");
+    sel.innerHTML = batches
+      .map((b) => b.aft)
+      .sort()
+      .map((aft) => "<option>" + aft + "</option>")
+      .join("");
+    document.getElementById("bulkBatchOrders").value = (prefillIds || []).join(", ");
+    document.getElementById("bulkBatchError").style.display = "none";
+    openModal("bulkBatchModal");
+  };
+
+  async function saveBulkBatch() {
+    const errBox = document.getElementById("bulkBatchError");
+    errBox.style.display = "none";
+    const aft = document.getElementById("bulkBatchAft").value;
+    const raw = document.getElementById("bulkBatchOrders").value.trim();
+    if (!aft || !raw) {
+      errBox.textContent = "Pick a batch and list at least one order number.";
+      errBox.style.display = "block";
+      return;
+    }
+    const ordersRaw = raw
+      .split(/[,\n]/)
+      .map((s) => bareOrderNumber(s.trim()))
+      .filter(Boolean)
+      .join(",");
+    try {
+      const result = await API.post("/boxes/" + encodeURIComponent(aft) + "/items", { orders_raw: ordersRaw });
+      const attached = (result.attached || []).length;
+      const already = (result.already_in_this_box || []).length;
+      const missing = (result.missing || []).length;
+      const failed = (result.failed || []).length;
+      let msg = attached + " order" + (attached === 1 ? "" : "s") + " added to " + aft + ".";
+      if (already) msg += " " + already + " already there.";
+      if (missing) msg += " " + missing + " don't exist yet.";
+      if (failed) msg += " " + failed + " failed (already in another box or has no items).";
+      toast(msg);
+      if (attached) {
+        const b = batches.find((x) => x.aft === aft);
+        if (b) await generateMessagesForStage(aft, b.stage);
+      }
+      closeModal("bulkBatchModal");
+      await reloadAndRender();
+      if (typeof window.openBatch === "function") window.openBatch(aft);
+    } catch (e) {
+      errBox.textContent = e.message || "Could not add orders to that batch";
+      errBox.style.display = "block";
+    }
+  }
+
+  function wireBulkOrderActions() {
+    const pagehead = document.querySelector("#orders .pagehead");
+    if (!pagehead || document.getElementById("bulkBatchOpenBtn")) return;
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.id = "bulkBatchOpenBtn";
+    btn.textContent = "⇄ Add Orders to AFT";
+    btn.addEventListener("click", () => window.openBulkBatchModal());
+    const addOrderBtn = document.getElementById("addOrderTopBtn");
+    if (addOrderBtn && addOrderBtn.parentElement) {
+      addOrderBtn.parentElement.insertBefore(btn, addOrderBtn);
+    } else {
+      pagehead.appendChild(btn);
+    }
+  }
+
+  function wireExportButtons() {
+    const specs = [
+      { view: "#orders", id: "exportOrdersBtn", fn: "exportOrdersCSV" },
+      { view: "#payments", id: "exportPaymentsBtn", fn: "exportPaymentsCSV" },
+      { view: "#returns", id: "exportReturnsBtn", fn: "exportReturnsCSV" },
+    ];
+    specs.forEach((s) => {
+      if (document.getElementById(s.id)) return;
+      const pagehead = document.querySelector(s.view + " .pagehead");
+      if (!pagehead) return;
+      // Whatever's already last (the page's primary "+ ..." action button,
+      // or a status pill on pages with no button) — grouped with Export so
+      // pagehead's own title/actions flex split (space-between) still holds.
+      const existingBtn = pagehead.lastElementChild;
+      const exportBtn = document.createElement("button");
+      exportBtn.className = "btn";
+      exportBtn.id = s.id;
+      exportBtn.textContent = "↓ Export CSV";
+      exportBtn.addEventListener("click", () => window[s.fn]());
+      if (existingBtn && existingBtn !== pagehead.firstElementChild) {
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.gap = "8px";
+        wrapper.style.alignItems = "flex-start";
+        existingBtn.replaceWith(wrapper);
+        wrapper.appendChild(exportBtn);
+        wrapper.appendChild(existingBtn);
+      } else {
+        pagehead.appendChild(exportBtn);
+      }
+    });
+  }
 
   // =====================================================================
   // TASKS / REMINDERS
@@ -14105,15 +14486,46 @@ button[onclick^="closeAction23("]{
   window.completeTaskV3 = window.completeTask15;
   window.completeTask = window.completeTask15;
 
-  window.reopenTask25 = function () {
-    toast("Reopening a completed task isn't supported by the backend yet.");
+  window.reopenTask25 = async function (id, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      await API.patch("/tasks/" + id + "/reopen");
+      toast("Task reopened");
+      await reloadAndRender();
+      if (typeof window.openTask25 === "function") window.openTask25(id);
+    } catch (err) {
+      toast(err.message || "Could not reopen task");
+    }
   };
   window.reopenTask23 = window.reopenTask25;
 
-  window.saveTaskNotes15 = function () {
-    toast("Editing notes on an existing task isn't supported by the backend yet — add the detail when creating the reminder.");
+  window.saveTaskNotes15 = async function (id) {
+    const notesEl = document.getElementById("taskNotes23");
+    if (!notesEl) return;
+    try {
+      await API.patch("/tasks/" + id, { notes: notesEl.value.trim() || null });
+      toast("Task notes saved");
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not save task notes");
+    }
   };
   window.saveTaskNotes23 = window.saveTaskNotes15;
+
+  window.deleteTaskReal = async function (id) {
+    if (!confirm("Delete this task? This cannot be undone.")) return;
+    try {
+      await API.del("/tasks/" + id);
+      toast("Task deleted");
+      closeDrawer();
+      await reloadAndRender();
+    } catch (e) {
+      toast(e.message || "Could not delete task");
+    }
+  };
 
   // =====================================================================
   // MESSAGES
@@ -14293,6 +14705,9 @@ button[onclick^="closeAction23("]{
       await loadEverything();
       wireCreateBatchButton();
       wireAddReminderButton();
+      wireAddOrderButton();
+      wireExportButtons();
+      wireBulkOrderActions();
       if (typeof renderAll === "function") renderAll();
       window.renderResourcesReal();
       window.renderSecuritySettings();

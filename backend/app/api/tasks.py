@@ -9,7 +9,7 @@ from app.auth.deps import get_current_user, require_ops
 from app.db import get_db
 from app.models.task import Task
 from app.models.user import User
-from app.schemas.task import TaskCreate, TaskOut
+from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -63,3 +63,54 @@ def complete_task(
     db.commit()
     db.refresh(task)
     return _out(task)
+
+
+@router.patch("/{task_id}", response_model=TaskOut)
+def update_task(
+    task_id: int, body: TaskUpdate, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
+):
+    task = db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No such task.")
+    before = {"title": task.title, "priority": task.priority, "due_on": str(task.due_on), "notes": task.notes}
+    for field in ("title", "priority", "due_on", "notes"):
+        if field in body.model_fields_set:
+            setattr(task, field, getattr(body, field))
+    db.flush()
+    record_audit(
+        db, request, user, "task.update", "task", str(task.id),
+        before=before, after={"title": task.title, "priority": task.priority, "due_on": str(task.due_on), "notes": task.notes},
+    )
+    db.commit()
+    db.refresh(task)
+    return _out(task)
+
+
+@router.patch("/{task_id}/reopen", response_model=TaskOut)
+def reopen_task(
+    task_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    task = db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No such task.")
+    before = {"status": task.status}
+    task.status = "Open"
+    task.completed_at = None
+    db.flush()
+    record_audit(db, request, user, "task.reopen", "task", str(task.id), before=before, after={"status": "Open"})
+    db.commit()
+    db.refresh(task)
+    return _out(task)
+
+
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(
+    task_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    task = db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No such task.")
+    record_audit(db, request, user, "task.delete", "task", str(task.id), before={"title": task.title, "status": task.status})
+    db.delete(task)
+    db.commit()

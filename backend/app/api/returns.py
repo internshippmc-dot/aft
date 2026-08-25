@@ -92,3 +92,15 @@ def update_return(
     db.commit()
     db.refresh(case)
     return _out(case)
+
+
+@router.delete("/{return_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_return(
+    return_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    case = db.get(ReturnCase, return_id)
+    if case is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No such return.")
+    record_audit(db, request, user, "return.delete", "return", str(case.id), before={"status": case.status, "type": case.type})
+    db.delete(case)
+    db.commit()

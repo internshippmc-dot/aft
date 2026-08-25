@@ -16,6 +16,19 @@ class PaymentCreate(BaseModel):
     notes: str | None = None
 
 
+class PaymentUpdate(BaseModel):
+    """PATCH /payments/{id}. Every field optional — only provided fields change."""
+    occurred_on: datetime.date | None = None
+    type: str | None = Field(default=None, min_length=1, max_length=64)
+    payee: str | None = Field(default=None, min_length=1, max_length=256)
+    reference: str | None = None
+    box_aft_number: str | None = None
+    amount_inr: Decimal | None = None
+    paid_by: str | None = Field(default=None, min_length=1, max_length=128)
+    method: str | None = None
+    notes: str | None = None
+
+
 class PaymentOut(BaseModel):
     id: int
     occurred_on: datetime.date

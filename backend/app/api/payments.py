@@ -8,7 +8,7 @@ from app.db import get_db
 from app.models.box import Box
 from app.models.payment import Payment
 from app.models.user import User
-from app.schemas.payment import PaymentCreate, PaymentOut
+from app.schemas.payment import PaymentCreate, PaymentOut, PaymentUpdate
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -68,3 +68,52 @@ def create_payment(
     db.commit()
     db.refresh(payment)
     return _out(payment)
+
+
+def _get_payment_or_404(db: DbSession, payment_id: int) -> Payment:
+    payment = db.scalar(select(Payment).where(Payment.id == payment_id).options(selectinload(Payment.box)))
+    if payment is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No payment {payment_id}.")
+    return payment
+
+
+@router.patch("/{payment_id}", response_model=PaymentOut)
+def update_payment(
+    payment_id: int, body: PaymentUpdate, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
+):
+    payment = _get_payment_or_404(db, payment_id)
+    before = _out(payment).model_dump(mode="json")
+
+    if "box_aft_number" in body.model_fields_set:
+        if body.box_aft_number:
+            box = db.scalar(select(Box).where(Box.aft_number == body.box_aft_number))
+            if box is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No box {body.box_aft_number}.")
+            payment.box_id = box.id
+        else:
+            payment.box_id = None
+
+    for field in ("occurred_on", "type", "payee", "reference", "amount_inr", "paid_by", "method", "notes"):
+        value = getattr(body, field)
+        if field in body.model_fields_set and (value is not None or field in ("reference", "method", "notes")):
+            setattr(payment, field, value)
+
+    db.flush()
+    record_audit(
+        db, request, user, "payment.update", "payment", str(payment.id),
+        before=before, after=_out(payment).model_dump(mode="json"),
+    )
+    db.commit()
+    db.refresh(payment)
+    return _out(payment)
+
+
+@router.delete("/{payment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_payment(
+    payment_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    payment = _get_payment_or_404(db, payment_id)
+    record_audit(db, request, user, "payment.delete", "payment", str(payment.id), before=_out(payment).model_dump(mode="json"))
+    db.delete(payment)
+    db.commit()
