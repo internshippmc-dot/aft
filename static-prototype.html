@@ -13522,6 +13522,12 @@ button[onclick^="closeAction23("]{
     await loadEverything();
     if (typeof renderAll === "function") renderAll();
     if (typeof window.renderResourcesReal === "function") window.renderResourcesReal();
+    // The Tasks & Reminders table (#taskRows) is owned by renderTasks25, but
+    // it lives in a separate script block from the older renderAll() chain
+    // (renderEverything4 -> renderTasks8), which only ever sees its own
+    // sibling-scope renderTasks8 and never picks up the later reassignment.
+    // Call it directly so new/edited tasks actually show up in that table.
+    if (typeof window.renderTasks25 === "function") window.renderTasks25();
   }
   window.af29Reload = reloadAndRender;
 
@@ -15281,11 +15287,13 @@ button[onclick^="closeAction23("]{
       wireLogShipmentButton();
       wireGlobalSearch();
       if (typeof renderAll === "function") renderAll();
+      if (typeof window.renderTasks25 === "function") window.renderTasks25();
       window.renderResourcesReal();
       window.renderSecuritySettings();
       toast("Connected to live data");
       await catchUpAllMessages();
       if (typeof renderAll === "function") renderAll();
+      if (typeof window.renderTasks25 === "function") window.renderTasks25();
     } catch (e) {
       toast(e.message || "Could not load live data");
     }
