@@ -13620,7 +13620,7 @@ button[onclick^="closeAction23("]{
     Delivered: { label: "✓ Feedback Collected", leg: null },
     Feedback: { label: "✓ Close Batch", leg: null },
   };
-  function renderQuickAdvance(b) {
+  window.renderQuickAdvance = function (b) {
     const step = QUICK_ADVANCE_STEPS[b.stage];
     if (!step) return "";
     const idx = STAGE_ORDER.indexOf(b.stage);
@@ -13630,7 +13630,7 @@ button[onclick^="closeAction23("]{
       '<div class="nextaction" style="margin-bottom:12px">' +
       '<div class="l">NEXT STEP</div>' +
       '<div class="v" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-      "<span>" + esc23(next) + "</span>" +
+      "<span>" + esc29(next) + "</span>" +
       '<button class="btn primary small" onclick="quickAdvanceStage(\'' +
       b.aft +
       "', '" +
