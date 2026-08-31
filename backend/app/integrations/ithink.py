@@ -73,11 +73,16 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
         }
         for item in order.items
     ]
+    # iThink recalculates the order total from quantity * product_price
+    # summed across `products` and rejects the booking if it doesn't match
+    # what we send as total_amount — order.total_inr can differ (shipping,
+    # discounts, rounding) so the products sum is what must be sent here.
+    calculated_total = sum(i["product_quantity"] * i["product_price"] for i in items)
     return {
         "order": _order_number_suffix(order.order_number, order_type),
         "sub_order": "",
         "order_date": order.placed_at.strftime("%Y-%m-%d %H:%M:%S"),
-        "total_amount": float(order.total_inr or 0),
+        "total_amount": calculated_total,
         "name": address.get("name") or (order.customer.full_name if order.customer else "Customer"),
         "add": address.get("address1") or "",
         "add2": address.get("address2") or "",
@@ -97,7 +102,7 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
         "shipment_height": 10,
         "weight": 0.5,
         "payment_mode": "Prepaid" if (order.financial_status == "paid") else "cod",
-        "cod_amount": 0 if order.financial_status == "paid" else float(order.total_inr or 0),
+        "cod_amount": 0 if order.financial_status == "paid" else calculated_total,
         # This account's validation treats most of iThink's documented
         # "optional" charge/discount fields as mandatory in practice — set
         # to 0 since we don't track any of these separately.
