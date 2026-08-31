@@ -14326,31 +14326,89 @@ button[onclick^="closeAction23("]{
   // =====================================================================
   // ITHINK LOGISTICS — forward (outbound delivery) and reverse (return
   // pickup) shipment booking. Backend does the real courier API call and
-  // stores the AWB; this just triggers it and shows the result.
+  // stores the AWB; this just triggers it and shows the result. Ops picks
+  // which of our warehouses/offices the shipment goes out from — this
+  // account books from more than one, so there's no single default.
   // =====================================================================
-  window.bookIthinkShipmentReal = async function (orderId) {
-    if (!confirm("Book an iThink forward shipment for " + orderId + "? This creates a real courier booking.")) return;
-    try {
-      const shipment = await API.post("/integrations/orders/" + encodeURIComponent(orderId) + "/ithink/book", {});
-      toast("Booked with " + (shipment.courier || "iThink") + " — AWB " + (shipment.awb || "pending"));
-      await reloadAndRender();
-      if (typeof window.openOrder15 === "function") window.openOrder15(orderId);
-    } catch (e) {
-      toast(e.message || "Could not book shipment");
-    }
-  };
+  let ithinkPickupAddresses = null;
+  async function loadPickupAddresses() {
+    if (ithinkPickupAddresses) return ithinkPickupAddresses;
+    ithinkPickupAddresses = await API.get("/integrations/ithink/pickup-addresses");
+    return ithinkPickupAddresses;
+  }
 
-  window.bookIthinkReturnReal = async function (returnId) {
-    if (!confirm("Book an iThink reverse pickup for case " + returnId + "? This creates a real courier booking.")) return;
+  function ensureIthinkBookModal() {
+    if (document.getElementById("ithinkBookModal")) return;
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="ithinkBookModal"><div class="modal" style="width:min(480px,95vw)">' +
+        '<div class="modalhead"><h3 id="ithinkBookTitle">Book iThink Shipment</h3><button class="btn close" onclick="closeModal(\'ithinkBookModal\')">×</button></div>' +
+        '<div class="modalbody"><div class="field"><label>Pickup address</label><div id="ithinkAddressList"></div></div></div>' +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'ithinkBookModal\')">Cancel</button>' +
+        '<button class="btn primary" id="ithinkBookSaveBtn">Book Shipment</button></div>' +
+        "</div></div>"
+    );
+    wireIthinkBookButton();
+  }
+  let ithinkBookTarget = null; // { kind: 'order'|'return', id }
+  async function openIthinkBookModal(kind, id, title) {
+    ensureIthinkBookModal();
+    ithinkBookTarget = { kind, id };
+    document.getElementById("ithinkBookTitle").textContent = title;
+    const holder = document.getElementById("ithinkAddressList");
+    holder.innerHTML = '<div class="empty">Loading addresses…</div>';
+    openModal("ithinkBookModal");
     try {
-      const shipment = await API.post("/integrations/returns/" + encodeURIComponent(returnId) + "/ithink/book", {});
-      toast("Pickup booked with " + (shipment.courier || "iThink") + " — AWB " + (shipment.awb || "pending"));
-      await reloadAndRender();
-      if (typeof window.openReturn19 === "function") window.openReturn19(returnId);
+      const addresses = await loadPickupAddresses();
+      holder.innerHTML = addresses
+        .map(
+          (a, i) =>
+            '<label class="checkrow"><input type="radio" name="ithinkAddr" value="' +
+            a.id +
+            '"' +
+            (i === 0 ? " checked" : "") +
+            "><div class=\"grow\"><div class=\"title\">" +
+            esc29(a.label) +
+            "</div></div></label>"
+        )
+        .join("");
     } catch (e) {
-      toast(e.message || "Could not book return pickup");
+      holder.innerHTML = '<div class="empty">Could not load pickup addresses.</div>';
     }
+  }
+  window.bookIthinkShipmentReal = function (orderId) {
+    openIthinkBookModal("order", orderId, "Book iThink Shipment — " + orderId);
   };
+  window.bookIthinkReturnReal = function (returnId) {
+    openIthinkBookModal("return", returnId, "Book Return Pickup — case " + returnId);
+  };
+  function wireIthinkBookButton() {
+    const btn = document.getElementById("ithinkBookSaveBtn");
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", async () => {
+      const picked = document.querySelector('input[name="ithinkAddr"]:checked');
+      if (!picked || !ithinkBookTarget) {
+        toast("Pick a pickup address");
+        return;
+      }
+      const { kind, id } = ithinkBookTarget;
+      const url =
+        kind === "order"
+          ? "/integrations/orders/" + encodeURIComponent(id) + "/ithink/book"
+          : "/integrations/returns/" + encodeURIComponent(id) + "/ithink/book";
+      try {
+        const shipment = await API.post(url, { pickup_address_id: picked.value });
+        toast("Booked with " + (shipment.courier || "iThink") + " — AWB " + (shipment.awb || "pending"));
+        closeModal("ithinkBookModal");
+        await reloadAndRender();
+        if (kind === "order" && typeof window.openOrder15 === "function") window.openOrder15(id);
+        if (kind === "return" && typeof window.openReturn19 === "function") window.openReturn19(id);
+      } catch (e) {
+        toast(e.message || "Could not book shipment");
+      }
+    });
+  }
 
   // =====================================================================
   // ADD ORDER — manual order entry, saved for real via POST /orders

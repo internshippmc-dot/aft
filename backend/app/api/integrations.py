@@ -10,9 +10,14 @@ from app.models.plumbing import SyncState
 from app.models.return_case import ReturnCase
 from app.models.user import User
 from app.schemas.common import ShipmentOut
-from app.schemas.integrations import SyncStateOut, SyncSummary
+from app.schemas.integrations import IThinkBookRequest, PickupAddressOut, SyncStateOut, SyncSummary
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
+
+
+@router.get("/ithink/pickup-addresses", response_model=list[PickupAddressOut])
+def list_pickup_addresses(_user: User = Depends(require_ops)):
+    return [PickupAddressOut(**a) for a in ithink.PICKUP_ADDRESSES]
 
 
 @router.get("/status", response_model=dict[str, SyncStateOut | None])
@@ -48,11 +53,12 @@ def sync_shopify(request: Request, user: User = Depends(require_owner), db: DbSe
 
 @router.post("/orders/{order_number}/ithink/book", response_model=ShipmentOut)
 def book_ithink_shipment(
-    order_number: str, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+    order_number: str, body: IThinkBookRequest, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
 ):
     order = _find_order(db, order_number)
     try:
-        shipment = ithink.book_shipment(db, order)
+        shipment = ithink.book_shipment(db, order, body.pickup_address_id)
     except ithink.IThinkNotConfigured as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 — surface the real iThink error to the operator
@@ -76,7 +82,8 @@ def book_ithink_shipment(
 
 @router.post("/returns/{return_id}/ithink/book", response_model=ShipmentOut)
 def book_ithink_return_shipment(
-    return_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+    return_id: int, body: IThinkBookRequest, request: Request,
+    user: User = Depends(require_ops), db: DbSession = Depends(get_db),
 ):
     """Books a reverse pickup — courier collects from the customer and brings
     it back to our warehouse — for an existing return/exchange case."""
@@ -85,7 +92,7 @@ def book_ithink_return_shipment(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No return case {return_id}.")
     order = return_case.order
     try:
-        shipment = ithink.book_return_shipment(db, order, return_case)
+        shipment = ithink.book_return_shipment(db, order, return_case, body.pickup_address_id)
     except ithink.IThinkNotConfigured as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 — surface the real iThink error to the operator

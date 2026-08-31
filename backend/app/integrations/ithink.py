@@ -1,8 +1,11 @@
 """iThink Logistics — shipment booking + tracking.
 
-API reference: https://docs.ithinklogistics.com/doc-add-order/1 (booking) and
-https://docs.ithinklogistics.com/doc-track-order/3 (tracking). Both endpoints
-take access_token/secret_key inside the JSON body, not as headers.
+API reference: https://docs.ithinklogistics.com/doc-add-order/3 (booking v3)
+and https://docs.ithinklogistics.com/doc-track-order/3 (tracking). Both
+endpoints take access_token/secret_key inside the JSON body, not as headers.
+Note the two live on different domains — my.ithinklogistics.com for booking,
+api.ithinklogistics.com for tracking — confirmed against iThink's own docs
+(not a typo).
 """
 
 import datetime
@@ -17,9 +20,7 @@ from app.models.order import Order
 from app.models.plumbing import SyncState
 from app.models.return_case import ReturnCase
 
-# iThink's endpoints aren't consistently versioned across their own docs —
-# add-order lives under /api, track-order under /api_v3.
-ADD_ORDER_URL = "https://api.ithinklogistics.com/api/order/add.json"
+ADD_ORDER_URL = "https://my.ithinklogistics.com/api_v3/order/add.json"
 TRACK_ORDER_URL = "https://api.ithinklogistics.com/api_v3/order/track.json"
 TRACKING_SYNC_KEY = "ithink_tracking"
 # iThink caps this request at 10 AWBs per call.
@@ -28,6 +29,19 @@ TRACK_BATCH_SIZE = 10
 # Best-effort mapping from iThink's current_status_code to what we consider
 # "delivered" for Shipment.delivered_on — anything else just updates status.
 DELIVERED_CODES = {"DL", "DELIVERED"}
+
+# The warehouses/offices registered as pickup addresses in the iThink portal
+# (Settings -> Addresses). Every one of them has its RTO address set to
+# "Same as Pickup" there, so whichever address a shipment is picked up from
+# is also where a return/RTO comes back to — no separate return-address
+# concept needed. Ops picks the address per booking rather than one being
+# hardcoded, since shipments actually go out from more than one of these.
+PICKUP_ADDRESSES = [
+    {"id": "121347", "label": "Actually Fair Delhi Warehouse"},
+    {"id": "120998", "label": "MC Warehouse"},
+    {"id": "120956", "label": "Actually Fair Technologies"},
+]
+PICKUP_ADDRESS_IDS = {a["id"] for a in PICKUP_ADDRESSES}
 
 
 class IThinkNotConfigured(Exception):
@@ -46,7 +60,10 @@ def _order_number_suffix(order_number: str, kind: str) -> str:
     return order_number if kind == "forward" else f"{order_number}-RET"
 
 
-def _shipment_payload(order: Order, settings, *, order_type: str) -> dict:
+def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) -> dict:
+    """Per the v3 add-order schema, pickup_address_id and order_type are
+    fields on the outer `data` object (see _post_add_order), not inside the
+    shipment itself — only return_address_id lives on the shipment."""
     address = order.ship_address or {}
     items = [
         {
@@ -68,6 +85,8 @@ def _shipment_payload(order: Order, settings, *, order_type: str) -> dict:
         "state": address.get("province") or "",
         "country": address.get("country") or "India",
         "phone": address.get("phone") or (order.customer.phone_e164 if order.customer else ""),
+        # our data model has no separate billing address — shipping is billing.
+        "is_billing_same_as_shipping": "yes",
         "products": items,
         "shipment_length": 10,
         "shipment_width": 10,
@@ -75,14 +94,22 @@ def _shipment_payload(order: Order, settings, *, order_type: str) -> dict:
         "weight": 0.5,
         "payment_mode": "Prepaid" if (order.financial_status == "paid") else "cod",
         "cod_amount": 0 if order.financial_status == "paid" else float(order.total_inr or 0),
-        "return_address_id": settings.ithink_return_address_id,
-        "pickup_address_id": settings.ithink_pickup_address_id,
-        "order_type": order_type,
+        # every registered address's RTO is "Same as Pickup" in the iThink
+        # portal, so the return address always mirrors whichever pickup
+        # address this particular shipment goes out from.
+        "return_address_id": pickup_address_id,
     }
 
 
-def _post_add_order(shipment_body: dict, settings) -> dict:
-    payload = {"data": {"shipments": [shipment_body], **_auth(settings)}}
+def _post_add_order(shipment_body: dict, pickup_address_id: str, order_type: str, settings) -> dict:
+    payload = {
+        "data": {
+            "shipments": [shipment_body],
+            "pickup_address_id": pickup_address_id,
+            "order_type": order_type,
+            **_auth(settings),
+        }
+    }
     resp = httpx.post(ADD_ORDER_URL, json=payload, timeout=30)
     resp.raise_for_status()
     body = resp.json()
@@ -92,21 +119,31 @@ def _post_add_order(shipment_body: dict, settings) -> dict:
     return result
 
 
-def book_shipment(db: DbSession, order: Order) -> Shipment:
+def _resolve_pickup_address(pickup_address_id: str | None) -> str:
+    pickup_address_id = (pickup_address_id or "").strip()
+    if not pickup_address_id:
+        raise IThinkNotConfigured("pickup_address_id is required — pick a pickup address to book from.")
+    if pickup_address_id not in PICKUP_ADDRESS_IDS:
+        known = ", ".join(a["label"] for a in PICKUP_ADDRESSES)
+        raise IThinkNotConfigured(f"Unknown pickup_address_id '{pickup_address_id}'. Known addresses: {known}.")
+    return pickup_address_id
+
+
+def book_shipment(db: DbSession, order: Order, pickup_address_id: str | None = None) -> Shipment:
     """PRD-adjacent (not in original PRD, added per user request) — create a
     forward (outbound delivery) iThink shipment for an order and store the
     returned AWB. Raises on any failure; the caller (an owner/ops-triggered
     endpoint) surfaces that directly to the operator rather than silently
     retrying, unlike the background sync loops."""
     settings = get_settings()
-    if not settings.ithink_pickup_address_id or not settings.ithink_return_address_id:
-        raise IThinkNotConfigured("ITHINK_PICKUP_ADDRESS_ID / ITHINK_RETURN_ADDRESS_ID not set.")
+    pickup_address_id = _resolve_pickup_address(pickup_address_id)
 
-    result = _post_add_order(_shipment_payload(order, settings, order_type="forward"), settings)
+    body = _shipment_payload(order, pickup_address_id, order_type="forward")
+    result = _post_add_order(body, pickup_address_id, "forward", settings)
 
     shipment = Shipment(
         order_id=order.id,
-        courier=result.get("logistic"),
+        courier=result.get("logistic_name"),
         awb=result.get("waybill"),
         status="booked",
         kind="forward",
@@ -116,22 +153,25 @@ def book_shipment(db: DbSession, order: Order) -> Shipment:
     return shipment
 
 
-def book_return_shipment(db: DbSession, order: Order, return_case: ReturnCase) -> Shipment:
+def book_return_shipment(
+    db: DbSession, order: Order, return_case: ReturnCase, pickup_address_id: str | None = None
+) -> Shipment:
     """Book a reverse pickup — courier collects from the customer's address
-    (the order's ship_address, same as forward) and delivers back to our
-    warehouse. Same two address IDs as forward; only order_type differs,
-    which is how every major Indian courier aggregator (iThink included)
-    distinguishes a reverse pickup from an outbound delivery."""
+    (the order's ship_address, same as forward) and delivers back to
+    whichever of our addresses is passed in. Only order_type differs from a
+    forward booking, which is how every major Indian courier aggregator
+    (iThink included) distinguishes a reverse pickup from an outbound
+    delivery."""
     settings = get_settings()
-    if not settings.ithink_pickup_address_id or not settings.ithink_return_address_id:
-        raise IThinkNotConfigured("ITHINK_PICKUP_ADDRESS_ID / ITHINK_RETURN_ADDRESS_ID not set.")
+    pickup_address_id = _resolve_pickup_address(pickup_address_id)
 
-    result = _post_add_order(_shipment_payload(order, settings, order_type="reverse"), settings)
+    body = _shipment_payload(order, pickup_address_id, order_type="reverse")
+    result = _post_add_order(body, pickup_address_id, "reverse", settings)
 
     shipment = Shipment(
         order_id=order.id,
         return_id=return_case.id,
-        courier=result.get("logistic"),
+        courier=result.get("logistic_name"),
         awb=result.get("waybill"),
         status="booked",
         kind="reverse",

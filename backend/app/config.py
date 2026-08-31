@@ -39,12 +39,11 @@ class Settings(BaseSettings):
     shopify_api_version: str = "2026-01"
     shopify_sync_interval_seconds: int = 1800
 
-    # iThink Logistics — booking + tracking. pickup/return address ids come
-    # from the merchant's own iThink portal (Settings -> Addresses).
+    # iThink Logistics — booking + tracking. Pickup/return address ids are
+    # chosen per booking (see app/integrations/ithink.py PICKUP_ADDRESSES),
+    # not configured here — this account books from more than one address.
     ithink_access_token: str | None = None
     ithink_secret_key: str | None = None
-    ithink_pickup_address_id: str | None = None
-    ithink_return_address_id: str | None = None
     ithink_tracking_interval_seconds: int = 900
 
     @property

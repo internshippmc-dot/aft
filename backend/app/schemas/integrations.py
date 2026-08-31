@@ -13,3 +13,12 @@ class SyncSummary(BaseModel):
     created: int
     updated: int
     error: str | None
+
+
+class PickupAddressOut(BaseModel):
+    id: str
+    label: str
+
+
+class IThinkBookRequest(BaseModel):
+    pickup_address_id: str | None = None
