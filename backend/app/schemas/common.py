@@ -25,3 +25,4 @@ class ShipmentOut(BaseModel):
     status: str | None
     handed_over_on: datetime.date | None
     delivered_on: datetime.date | None
+    kind: str = "forward"

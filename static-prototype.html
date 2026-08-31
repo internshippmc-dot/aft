@@ -6085,6 +6085,7 @@ renderAll();
         <button class="v8-flag ${o.flagged?'flagged':''}" onclick="toggleFlag6('${o.id}',event)">⚑</button>
         <button class="btn small" onclick="editNoteV3('${o.id}',event)">✎ Notes</button>
         ${p?`<button class="btn small" onclick="previewMessage(${p.id})">${esc16(msgLabel16(p.type))} due</button>`:''}
+        <button class="btn small" onclick="bookIthinkShipmentReal('${o.id}')">📦 Book iThink Shipment</button>
       </div>
 
       <div class="metricrow">
@@ -7701,6 +7702,7 @@ renderAll();
           <div class="af-savebar19">
             <button class="btn" style="border-color:#f3c7c4;color:#b42318" onclick="deleteReturnReal('${esc19(r.id)}')">Delete Case</button>
             <button class="btn" onclick="openReturnOrder19('${esc19(r.order)}')">Open Order</button>
+            <button class="btn" onclick="bookIthinkReturnReal('${esc19(r.id)}')">📦 Book Return Pickup</button>
             <button class="btn primary" onclick="saveReturn19('${esc19(r.id)}')">Save Changes</button>
           </div>
         </div>
@@ -14318,6 +14320,35 @@ button[onclick^="closeAction23("]{
       await reloadAndRender();
     } catch (e) {
       toast(e.message || "Could not delete case");
+    }
+  };
+
+  // =====================================================================
+  // ITHINK LOGISTICS — forward (outbound delivery) and reverse (return
+  // pickup) shipment booking. Backend does the real courier API call and
+  // stores the AWB; this just triggers it and shows the result.
+  // =====================================================================
+  window.bookIthinkShipmentReal = async function (orderId) {
+    if (!confirm("Book an iThink forward shipment for " + orderId + "? This creates a real courier booking.")) return;
+    try {
+      const shipment = await API.post("/integrations/orders/" + encodeURIComponent(orderId) + "/ithink/book", {});
+      toast("Booked with " + (shipment.courier || "iThink") + " — AWB " + (shipment.awb || "pending"));
+      await reloadAndRender();
+      if (typeof window.openOrder15 === "function") window.openOrder15(orderId);
+    } catch (e) {
+      toast(e.message || "Could not book shipment");
+    }
+  };
+
+  window.bookIthinkReturnReal = async function (returnId) {
+    if (!confirm("Book an iThink reverse pickup for case " + returnId + "? This creates a real courier booking.")) return;
+    try {
+      const shipment = await API.post("/integrations/returns/" + encodeURIComponent(returnId) + "/ithink/book", {});
+      toast("Pickup booked with " + (shipment.courier || "iThink") + " — AWB " + (shipment.awb || "pending"));
+      await reloadAndRender();
+      if (typeof window.openReturn19 === "function") window.openReturn19(returnId);
+    } catch (e) {
+      toast(e.message || "Could not book return pickup");
     }
   };
 

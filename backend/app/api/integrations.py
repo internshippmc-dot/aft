@@ -7,6 +7,7 @@ from app.auth.deps import require_owner, require_ops
 from app.db import get_db
 from app.integrations import ithink, shopify
 from app.models.plumbing import SyncState
+from app.models.return_case import ReturnCase
 from app.models.user import User
 from app.schemas.common import ShipmentOut
 from app.schemas.integrations import SyncStateOut, SyncSummary
@@ -69,4 +70,40 @@ def book_ithink_shipment(
         status=shipment.status,
         handed_over_on=shipment.handed_over_on,
         delivered_on=shipment.delivered_on,
+        kind=shipment.kind,
+    )
+
+
+@router.post("/returns/{return_id}/ithink/book", response_model=ShipmentOut)
+def book_ithink_return_shipment(
+    return_id: int, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
+):
+    """Books a reverse pickup — courier collects from the customer and brings
+    it back to our warehouse — for an existing return/exchange case."""
+    return_case = db.get(ReturnCase, return_id)
+    if return_case is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"No return case {return_id}.")
+    order = return_case.order
+    try:
+        shipment = ithink.book_return_shipment(db, order, return_case)
+    except ithink.IThinkNotConfigured as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 — surface the real iThink error to the operator
+        db.rollback()
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    if return_case.status == "Requested":
+        return_case.status = "Pickup Scheduled"
+    record_audit(
+        db, request, user, "integrations.ithink_book_return", "shipment", str(shipment.id),
+        after={"order_number": order.order_number, "return_id": return_id, "courier": shipment.courier, "awb": shipment.awb},
+    )
+    db.commit()
+    return ShipmentOut(
+        id=shipment.id,
+        courier=shipment.courier,
+        awb=shipment.awb,
+        status=shipment.status,
+        handed_over_on=shipment.handed_over_on,
+        delivered_on=shipment.delivered_on,
+        kind=shipment.kind,
     )

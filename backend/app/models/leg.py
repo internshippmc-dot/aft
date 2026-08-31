@@ -59,6 +59,8 @@ class Shipment(Base):
     handed_over_on: Mapped[datetime.date | None] = mapped_column(Date)
     delivered_on: Mapped[datetime.date | None] = mapped_column(Date)
     status: Mapped[str | None] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(Text, nullable=False, server_default="forward")
+    return_id: Mapped[int | None] = mapped_column(ForeignKey("returns.id", ondelete="SET NULL"))
 
     order: Mapped["Order"] = relationship("Order", back_populates="shipments")
 

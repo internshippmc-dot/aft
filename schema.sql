@@ -192,7 +192,8 @@ CREATE TABLE shipments (
     courier_price_inr NUMERIC(10,2),
     handed_over_on  DATE,
     delivered_on    DATE,
-    status          TEXT
+    status          TEXT,
+    kind            TEXT NOT NULL DEFAULT 'forward' CHECK (kind IN ('forward', 'reverse'))
 );
 CREATE INDEX ON shipments (awb);
 CREATE INDEX ON shipments (order_id);
@@ -229,6 +230,9 @@ CREATE TABLE returns (
 );
 CREATE INDEX ON returns (order_id);
 CREATE INDEX ON returns (status);
+
+ALTER TABLE shipments ADD COLUMN return_id BIGINT REFERENCES returns(id) ON DELETE SET NULL;
+CREATE INDEX ON shipments (return_id);
 
 CREATE TABLE tasks (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
