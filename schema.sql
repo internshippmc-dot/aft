@@ -309,6 +309,22 @@ CREATE TABLE sync_state (
     last_error      TEXT
 );
 
+CREATE TABLE refund_requests (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id        BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    amount_inr      NUMERIC(12,2) NOT NULL,
+    qr_image        TEXT,                 -- data: URI (base64), the customer's payment QR screenshot
+    reason          TEXT,
+    status          TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Paid', 'Cancelled')),
+    requested_by    BIGINT REFERENCES users(id),
+    paid_by         BIGINT REFERENCES users(id),
+    paid_at         TIMESTAMPTZ,
+    payment_id      BIGINT REFERENCES payments(id) ON DELETE SET NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON refund_requests (order_id);
+CREATE INDEX ON refund_requests (status);
+
 CREATE TABLE audit_log (
     id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     actor_user_id   BIGINT REFERENCES users(id),

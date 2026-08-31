@@ -11,6 +11,7 @@ from app.models.return_case import ReturnCase
 from app.models.task import Task
 from app.models.resource import Resource
 from app.models.customer_message import CustomerMessage
+from app.models.refund_request import RefundRequest
 
 __all__ = [
     "User",
@@ -32,4 +33,5 @@ __all__ = [
     "Task",
     "Resource",
     "CustomerMessage",
+    "RefundRequest",
 ]

@@ -20,6 +20,7 @@ from app.api import (
     messages,
     orders,
     payments,
+    refunds,
     resources,
     returns,
     search,
@@ -133,6 +134,7 @@ app.include_router(resources.router, prefix="/api/v1")
 app.include_router(messages.router, prefix="/api/v1")
 app.include_router(control_tower.router, prefix="/api/v1")
 app.include_router(manufacturer_shipments.router, prefix="/api/v1")
+app.include_router(refunds.router, prefix="/api/v1")
 
 
 @app.get("/")

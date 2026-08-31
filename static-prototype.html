@@ -13538,6 +13538,7 @@ button[onclick^="closeAction23("]{
     // one of those checks has always silently skipped. The function that
     // actually renders #messageGroups is applyMessageFiltersV2.
     if (typeof window.applyMessageFiltersV2 === "function") window.applyMessageFiltersV2();
+    if (typeof window.renderRefundsReal === "function") window.renderRefundsReal();
   }
   window.af29Reload = reloadAndRender;
 
@@ -14435,6 +14436,179 @@ button[onclick^="closeAction23("]{
       }
     });
   }
+
+  // =====================================================================
+  // REFUNDS — ops logs a refund with the customer's payment QR code
+  // screenshot; only the owner (whoever can actually move money) marks it
+  // paid once they've sent it. Marking paid also drops a matching Payment
+  // record (type "Refund") so it shows up in the books automatically.
+  // =====================================================================
+  function ensureRefundsPage() {
+    if (document.getElementById("refunds")) return;
+
+    const sidebar = document.querySelector(".sidebar");
+    const financeLabel = [...sidebar.querySelectorAll(".navlabel")].find((n) => n.textContent.includes("Finance"));
+    const financeGroup = financeLabel ? financeLabel.closest(".navgroup") : null;
+    if (financeGroup) {
+      financeGroup.insertAdjacentHTML(
+        "beforeend",
+        '<div class="navitem" data-view="refunds">💸 Refunds <span class="badge-count" id="navRefunds"></span></div>'
+      );
+      financeGroup.querySelector('[data-view="refunds"]').addEventListener("click", () => showView("refunds"));
+    }
+
+    const content = document.querySelector(".content");
+    content.insertAdjacentHTML(
+      "beforeend",
+      '<section class="view" id="refunds">' +
+        '<div class="pagehead"><div><h2>Refunds</h2><p>Customer refund requests, paid out by QR code once the owner sends the money.</p></div>' +
+        '<button class="btn primary" id="newRefundBtn">+ New Refund Request</button></div>' +
+        '<div class="card"><div class="tablewrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>QR Code</th><th>Reason</th><th>Status</th><th>Requested by</th><th>Action</th></tr></thead>' +
+        '<tbody id="refundRows"></tbody></table></div></div>' +
+        "</section>"
+    );
+    document.getElementById("newRefundBtn").addEventListener("click", openNewRefundModal);
+
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div class="modal-backdrop" id="refundModal"><div class="modal" style="width:min(480px,95vw)">' +
+        '<div class="modalhead"><h3>New Refund Request</h3><button class="btn close" onclick="closeModal(\'refundModal\')">×</button></div>' +
+        '<div class="modalbody">' +
+        '<div class="field"><label>Order number</label><input id="refundOrder" placeholder="#2249"></div>' +
+        '<div class="field"><label>Refund amount (₹)</label><input id="refundAmount" type="number" min="0" step="0.01"></div>' +
+        '<div class="field"><label>Customer\'s payment QR code (screenshot)</label><input id="refundQrFile" type="file" accept="image/*"></div>' +
+        '<div id="refundQrPreview" style="margin-top:8px"></div>' +
+        '<div class="field"><label>Reason</label><textarea id="refundReason" placeholder="Why is this refund happening?"></textarea></div>' +
+        "</div>" +
+        '<div class="modalfoot"><button class="btn" onclick="closeModal(\'refundModal\')">Cancel</button>' +
+        '<button class="btn primary" id="saveRefundBtn">Create Refund Request</button></div>' +
+        "</div></div>"
+    );
+    document.getElementById("refundQrFile").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById("refundQrPreview");
+      if (!file) {
+        preview.innerHTML = "";
+        return;
+      }
+      const dataUrl = await fileToDataUrl(file);
+      refundQrDataUrl = dataUrl;
+      preview.innerHTML = '<img src="' + dataUrl + '" style="max-width:180px;border-radius:8px;border:1px solid #e4e7ec">';
+    });
+    document.getElementById("saveRefundBtn").addEventListener("click", saveNewRefund);
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let refundQrDataUrl = null;
+  function openNewRefundModal() {
+    refundQrDataUrl = null;
+    document.getElementById("refundOrder").value = "";
+    document.getElementById("refundAmount").value = "";
+    document.getElementById("refundQrFile").value = "";
+    document.getElementById("refundQrPreview").innerHTML = "";
+    document.getElementById("refundReason").value = "";
+    openModal("refundModal");
+  }
+  window.openNewRefundModal = openNewRefundModal;
+
+  async function saveNewRefund() {
+    const orderNumber = document.getElementById("refundOrder").value.trim();
+    const amount = Number(document.getElementById("refundAmount").value || 0);
+    if (!orderNumber || !amount) {
+      toast("Order number and amount are required");
+      return;
+    }
+    try {
+      await API.post("/refunds", {
+        order_number: orderNumber,
+        amount_inr: amount,
+        qr_image: refundQrDataUrl,
+        reason: document.getElementById("refundReason").value.trim() || null,
+      });
+      toast("Refund request created");
+      closeModal("refundModal");
+      await renderRefundsReal();
+    } catch (e) {
+      toast(e.message || "Could not create refund request");
+    }
+  }
+
+  window.markRefundPaidReal = async function (id) {
+    if (!confirm("Mark this refund as paid? Only do this once the money has actually been sent.")) return;
+    try {
+      await API.patch("/refunds/" + id + "/mark-paid", {});
+      toast("Refund marked paid — logged as a payment too");
+      await renderRefundsReal();
+    } catch (e) {
+      toast(e.message || "Could not mark refund paid");
+    }
+  };
+
+  window.deleteRefundReal = async function (id) {
+    if (!confirm("Delete this refund request?")) return;
+    try {
+      await API.del("/refunds/" + id);
+      toast("Refund request deleted");
+      await renderRefundsReal();
+    } catch (e) {
+      toast(e.message || "Could not delete refund request");
+    }
+  };
+
+  window.previewRefundQr = function (url) {
+    if (!url) return;
+    window.open(url, "_blank");
+  };
+
+  window.renderRefundsReal = async function () {
+    ensureRefundsPage();
+    const holder = document.getElementById("refundRows");
+    if (!holder) return;
+    try {
+      const rows = await API.get("/refunds");
+      const isOwner = af29Me && af29Me.role === "owner";
+      const pendingCount = rows.filter((r) => r.status === "Pending").length;
+      const badge = document.getElementById("navRefunds");
+      if (badge) badge.textContent = pendingCount || "";
+      holder.innerHTML =
+        rows
+          .map(
+            (r) =>
+              "<tr>" +
+              "<td class=\"strong\">" + esc29(r.order_number) + "</td>" +
+              "<td>" + esc29(r.customer_name || "—") + "</td>" +
+              "<td>₹" + Number(r.amount_inr).toLocaleString("en-IN") + "</td>" +
+              "<td>" +
+              (r.qr_image
+                ? '<img src="' + r.qr_image + '" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="previewRefundQr(\'' + r.qr_image.replace(/'/g, "") + "')\">"
+                : "—") +
+              "</td>" +
+              "<td>" + esc29(r.reason || "—") + "</td>" +
+              "<td><span class=\"pill " + (r.status === "Paid" ? "green" : r.status === "Cancelled" ? "grey" : "amber") + "\">" + esc29(r.status) + "</span></td>" +
+              "<td>" + esc29(r.requested_by_name || "—") + "</td>" +
+              "<td>" +
+              (r.status === "Pending"
+                ? (isOwner ? '<button class="btn small primary" onclick="markRefundPaidReal(' + r.id + ')">Mark Paid</button> ' : '<span class="tiny" style="color:#98a2b3">Waiting on owner</span> ') +
+                  '<button class="btn small" style="border-color:#f3c7c4;color:#b42318" onclick="deleteRefundReal(' + r.id + ')">Delete</button>'
+                : r.status === "Paid"
+                ? "Paid by " + esc29(r.paid_by_name || "—")
+                : "—") +
+              "</td>" +
+              "</tr>"
+          )
+          .join("") || '<tr><td colspan="8"><div class="empty">No refund requests yet.</div></td></tr>';
+    } catch (e) {
+      holder.innerHTML = '<tr><td colspan="8"><div class="empty">Could not load refunds.</div></td></tr>';
+    }
+  };
 
   // =====================================================================
   // ADD ORDER — manual order entry, saved for real via POST /orders
@@ -15405,7 +15579,8 @@ button[onclick^="closeAction23("]{
       if (typeof window.renderTasks25 === "function") window.renderTasks25();
       if (typeof window.applyMessageFiltersV2 === "function") window.applyMessageFiltersV2();
       window.renderResourcesReal();
-      window.renderSecuritySettings();
+      await window.renderSecuritySettings();
+      await window.renderRefundsReal();
       toast("Connected to live data");
       await catchUpAllMessages();
       if (typeof renderAll === "function") renderAll();
