@@ -75,6 +75,7 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
     ]
     return {
         "order": _order_number_suffix(order.order_number, order_type),
+        "sub_order": "",
         "order_date": order.placed_at.strftime("%Y-%m-%d %H:%M:%S"),
         "total_amount": float(order.total_inr or 0),
         "name": address.get("name") or (order.customer.full_name if order.customer else "Customer"),
@@ -85,6 +86,9 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
         "state": address.get("province") or "",
         "country": address.get("country") or "India",
         "phone": address.get("phone") or (order.customer.phone_e164 if order.customer else ""),
+        # required by this account; we don't collect a separate alt number,
+        # so fall back to the same phone.
+        "alt_phone": address.get("phone") or (order.customer.phone_e164 if order.customer else ""),
         # our data model has no separate billing address — shipping is billing.
         "is_billing_same_as_shipping": "yes",
         "products": items,
@@ -94,6 +98,20 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
         "weight": 0.5,
         "payment_mode": "Prepaid" if (order.financial_status == "paid") else "cod",
         "cod_amount": 0 if order.financial_status == "paid" else float(order.total_inr or 0),
+        # This account's validation treats most of iThink's documented
+        # "optional" charge/discount fields as mandatory in practice — set
+        # to 0 since we don't track any of these separately.
+        "shipping_charges": 0,
+        "giftwrap_charges": 0,
+        "transaction_charges": 0,
+        "total_discount": 0,
+        "first_attemp_discount": 0,
+        "cod_charges": 0,
+        "advance_amount": 0,
+        "reseller_name": "",
+        "eway_bill_number": "",
+        "gst_number": "",
+        "what3words": "",
         # every registered address's RTO is "Same as Pickup" in the iThink
         # portal, so the return address always mirrors whichever pickup
         # address this particular shipment goes out from.
@@ -101,22 +119,60 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
     }
 
 
-def _post_add_order(shipment_body: dict, pickup_address_id: str, order_type: str, settings) -> dict:
-    payload = {
-        "data": {
-            "shipments": [shipment_body],
-            "pickup_address_id": pickup_address_id,
-            "order_type": order_type,
-            **_auth(settings),
-        }
+# Preferred courier order — try Bluedart first, then Delhivery, then let
+# iThink auto-assign whichever courier is actually serviceable for that
+# pickup/delivery pincode pair (per user instruction).
+PREFERRED_COURIERS = ["Bluedart", "Delhivery"]
+
+
+def _post_add_order(shipment_body: dict, pickup_address_id: str, order_type: str, settings, logistics: str | None = None) -> dict:
+    data = {
+        "shipments": [shipment_body],
+        "pickup_address_id": pickup_address_id,
+        "order_type": order_type,
+        # required by this account even though iThink's own docs list it as
+        # optional — "ground" is the value from their own documented example.
+        "s_type": "ground",
+        **_auth(settings),
     }
-    resp = httpx.post(ADD_ORDER_URL, json=payload, timeout=30)
+    if logistics:
+        data["logistics"] = logistics
+    resp = httpx.post(ADD_ORDER_URL, json={"data": data}, timeout=30)
     resp.raise_for_status()
     body = resp.json()
-    result = (body.get("data") or {}).get("1") or {}
-    if result.get("status") != "Success":
-        raise RuntimeError(f"iThink booking failed: {result.get('remark') or body}")
+    result_data = body.get("data")
+    # Observed in practice: a successful booking's "data" can come back as
+    # either {"1": {...}} keyed by shipment index, or the shipment dict
+    # itself directly — handle both rather than assume the keyed form.
+    if isinstance(result_data, dict) and "waybill" in result_data:
+        result = result_data
+    elif isinstance(result_data, dict):
+        result = result_data.get("1") or {}
+    else:
+        result = {}
+    if result.get("status") not in ("Success", "success") and not result.get("waybill"):
+        raise RuntimeError(f"iThink booking failed — full response: {body!r}")
     return result
+
+
+def _post_add_order_with_fallback(shipment_body: dict, pickup_address_id: str, order_type: str, settings) -> dict:
+    """Try each preferred courier in turn, then fall back to letting iThink
+    auto-assign whichever is actually serviceable, rather than failing
+    outright just because the top preference can't carry this shipment.
+
+    iThink registers the "order" id on its side as soon as an attempt is
+    made — even one that fails on that courier's serviceability — so a
+    retry reusing the exact same id gets rejected as a duplicate before its
+    own courier is even tried. Each attempt gets its own suffixed id."""
+    base_order = shipment_body["order"]
+    last_error: Exception | None = None
+    for courier in [*PREFERRED_COURIERS, None]:
+        attempt_body = {**shipment_body, "order": f"{base_order}-{courier or 'AUTO'}"}
+        try:
+            return _post_add_order(attempt_body, pickup_address_id, order_type, settings, logistics=courier)
+        except Exception as exc:  # noqa: BLE001 — try the next courier before giving up
+            last_error = exc
+    raise last_error
 
 
 def _resolve_pickup_address(pickup_address_id: str | None) -> str:
@@ -139,7 +195,7 @@ def book_shipment(db: DbSession, order: Order, pickup_address_id: str | None = N
     pickup_address_id = _resolve_pickup_address(pickup_address_id)
 
     body = _shipment_payload(order, pickup_address_id, order_type="forward")
-    result = _post_add_order(body, pickup_address_id, "forward", settings)
+    result = _post_add_order_with_fallback(body, pickup_address_id, "forward", settings)
 
     shipment = Shipment(
         order_id=order.id,
@@ -166,7 +222,7 @@ def book_return_shipment(
     pickup_address_id = _resolve_pickup_address(pickup_address_id)
 
     body = _shipment_payload(order, pickup_address_id, order_type="reverse")
-    result = _post_add_order(body, pickup_address_id, "reverse", settings)
+    result = _post_add_order_with_fallback(body, pickup_address_id, "reverse", settings)
 
     shipment = Shipment(
         order_id=order.id,
