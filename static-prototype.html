@@ -14475,6 +14475,8 @@ button[onclick^="closeAction23("]{
         '<div class="modalhead"><h3>New Refund Request</h3><button class="btn close" onclick="closeModal(\'refundModal\')">×</button></div>' +
         '<div class="modalbody">' +
         '<div class="field"><label>Order number</label><input id="refundOrder" placeholder="#2249"></div>' +
+        '<div class="field"><label>Customer name <span style="font-weight:400;color:#98a2b3">(only needed if this order isn\'t in All Orders yet — it\'ll be added automatically)</span></label><input id="refundCustomerName" placeholder="e.g. Priya Sharma"></div>' +
+        '<div class="field"><label>Phone <span style="font-weight:400;color:#98a2b3">(optional)</span></label><input id="refundCustomerPhone" placeholder="+91…"></div>' +
         '<div class="field"><label>Refund amount (₹)</label><input id="refundAmount" type="number" min="0" step="0.01"></div>' +
         '<div class="field"><label>Customer\'s payment QR code (screenshot)</label><input id="refundQrFile" type="file" accept="image/*"></div>' +
         '<div id="refundQrPreview" style="margin-top:8px"></div>' +
@@ -14511,6 +14513,8 @@ button[onclick^="closeAction23("]{
   function openNewRefundModal() {
     refundQrDataUrl = null;
     document.getElementById("refundOrder").value = "";
+    document.getElementById("refundCustomerName").value = "";
+    document.getElementById("refundCustomerPhone").value = "";
     document.getElementById("refundAmount").value = "";
     document.getElementById("refundQrFile").value = "";
     document.getElementById("refundQrPreview").innerHTML = "";
@@ -14532,10 +14536,14 @@ button[onclick^="closeAction23("]{
         amount_inr: amount,
         qr_image: refundQrDataUrl,
         reason: document.getElementById("refundReason").value.trim() || null,
+        customer_name: document.getElementById("refundCustomerName").value.trim() || null,
+        phone: document.getElementById("refundCustomerPhone").value.trim() || null,
       });
       toast("Refund request created");
       closeModal("refundModal");
-      await renderRefundsReal();
+      // A quick-created order needs the full data reload, not just the
+      // refunds table, so it shows up in All Orders immediately too.
+      await reloadAndRender();
     } catch (e) {
       toast(e.message || "Could not create refund request");
     }

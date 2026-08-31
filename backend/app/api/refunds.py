@@ -8,10 +8,12 @@ from app.api.orders import _find_order
 from app.audit import record_audit
 from app.auth.deps import get_current_user, require_owner, require_ops
 from app.db import get_db
+from app.domain.orders import create_order
 from app.models.order import Order
 from app.models.payment import Payment
 from app.models.refund_request import RefundRequest
 from app.models.user import User
+from app.schemas.order import OrderCreateIn, OrderItemCreate
 from app.schemas.refund_request import RefundRequestCreate, RefundRequestOut
 
 router = APIRouter(prefix="/refunds", tags=["refunds"])
@@ -71,7 +73,34 @@ def list_refunds(
 def create_refund(
     body: RefundRequestCreate, request: Request, user: User = Depends(require_ops), db: DbSession = Depends(get_db)
 ):
-    order = _find_order(db, body.order_number)
+    try:
+        order = _find_order(db, body.order_number)
+    except HTTPException as exc:
+        if exc.status_code != status.HTTP_404_NOT_FOUND:
+            raise
+        if not body.customer_name:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND,
+                detail=f"No order {body.order_number}. Add a customer name to create it and file the refund together.",
+            ) from exc
+        # Quick-create — a customer who ordered outside Shopify, or one
+        # Shopify sync just hasn't picked up yet. Same path used when
+        # pasting an unrecognised order number into an AFT batch.
+        order = create_order(
+            db,
+            OrderCreateIn(
+                order_number=body.order_number,
+                customer_name=body.customer_name,
+                phone=body.phone,
+                items=[OrderItemCreate(product_title="(added for refund — no line items on file)")],
+            ),
+        )
+        db.flush()
+        record_audit(
+            db, request, user, "order.quick_create", "order", order.order_number,
+            after={"customer_name": body.customer_name, "via": "refund_request"},
+        )
+
     refund = RefundRequest(
         order_id=order.id,
         amount_inr=body.amount_inr,
