@@ -13530,6 +13530,14 @@ button[onclick^="closeAction23("]{
     // sibling-scope renderTasks8 and never picks up the later reassignment.
     // Call it directly so new/edited tasks actually show up in that table.
     if (typeof window.renderTasks25 === "function") window.renderTasks25();
+    // Customer Messaging (#messageGroups) has the exact same problem: every
+    // call site in the file checks `typeof window.renderMessages4 ===
+    // 'function'` before calling it, but renderMessages4 was only ever
+    // declared as a plain (non-window) function local to its own script
+    // block — window.renderMessages4 has never actually existed, so every
+    // one of those checks has always silently skipped. The function that
+    // actually renders #messageGroups is applyMessageFiltersV2.
+    if (typeof window.applyMessageFiltersV2 === "function") window.applyMessageFiltersV2();
   }
   window.af29Reload = reloadAndRender;
 
@@ -15395,12 +15403,14 @@ button[onclick^="closeAction23("]{
       wireGlobalSearch();
       if (typeof renderAll === "function") renderAll();
       if (typeof window.renderTasks25 === "function") window.renderTasks25();
+      if (typeof window.applyMessageFiltersV2 === "function") window.applyMessageFiltersV2();
       window.renderResourcesReal();
       window.renderSecuritySettings();
       toast("Connected to live data");
       await catchUpAllMessages();
       if (typeof renderAll === "function") renderAll();
       if (typeof window.renderTasks25 === "function") window.renderTasks25();
+      if (typeof window.applyMessageFiltersV2 === "function") window.applyMessageFiltersV2();
     } catch (e) {
       toast(e.message || "Could not load live data");
     }
