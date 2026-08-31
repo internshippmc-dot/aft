@@ -14343,7 +14343,15 @@ button[onclick^="closeAction23("]{
       "beforeend",
       '<div class="modal-backdrop" id="ithinkBookModal"><div class="modal" style="width:min(480px,95vw)">' +
         '<div class="modalhead"><h3 id="ithinkBookTitle">Book iThink Shipment</h3><button class="btn close" onclick="closeModal(\'ithinkBookModal\')">×</button></div>' +
-        '<div class="modalbody"><div class="field"><label>Pickup address</label><div id="ithinkAddressList"></div></div></div>' +
+        '<div class="modalbody">' +
+        '<div class="field" style="margin-bottom:14px">' +
+        '<label>Direction</label>' +
+        '<div id="ithinkDirectionBadge" style="display:flex;gap:8px">' +
+        '<span id="ithinkDirFwd" class="pill" style="flex:1;text-align:center;padding:8px;font-weight:800">➜ FORWARD (outbound delivery)</span>' +
+        '<span id="ithinkDirRev" class="pill" style="flex:1;text-align:center;padding:8px;font-weight:800">⟲ REVERSE (return pickup)</span>' +
+        "</div></div>" +
+        '<div class="field"><label>Pickup address</label><div id="ithinkAddressList"></div></div>' +
+        "</div>" +
         '<div class="modalfoot"><button class="btn" onclick="closeModal(\'ithinkBookModal\')">Cancel</button>' +
         '<button class="btn primary" id="ithinkBookSaveBtn">Book Shipment</button></div>' +
         "</div></div>"
@@ -14355,6 +14363,16 @@ button[onclick^="closeAction23("]{
     ensureIthinkBookModal();
     ithinkBookTarget = { kind, id };
     document.getElementById("ithinkBookTitle").textContent = title;
+    // Direction is fixed by which button opened the modal — a return case
+    // has no order to ship forward, and a plain order has no return case
+    // to send a reverse pickup against — so this is a confirmation, not a
+    // choice, to prevent booking the wrong direction by mistake.
+    const fwd = document.getElementById("ithinkDirFwd");
+    const rev = document.getElementById("ithinkDirRev");
+    const activeStyle = "background:#111214;color:#fff;border-radius:8px";
+    const inactiveStyle = "background:#f2f4f7;color:#98a2b3;border-radius:8px";
+    fwd.style.cssText += kind === "order" ? activeStyle : inactiveStyle;
+    rev.style.cssText += kind === "return" ? activeStyle : inactiveStyle;
     const holder = document.getElementById("ithinkAddressList");
     holder.innerHTML = '<div class="empty">Loading addresses…</div>';
     openModal("ithinkBookModal");
