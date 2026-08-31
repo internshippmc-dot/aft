@@ -97,10 +97,11 @@ def _shipment_payload(order: Order, pickup_address_id: str, *, order_type: str) 
         # our data model has no separate billing address — shipping is billing.
         "is_billing_same_as_shipping": "yes",
         "products": items,
-        "shipment_length": 10,
-        "shipment_width": 10,
-        "shipment_height": 10,
-        "weight": 0.5,
+        # Standard package size for every shipment, per user instruction.
+        "shipment_length": 28,
+        "shipment_width": 22,
+        "shipment_height": 4,
+        "weight": 0.49,
         "payment_mode": "Prepaid" if (order.financial_status == "paid") else "cod",
         "cod_amount": 0 if order.financial_status == "paid" else calculated_total,
         # This account's validation treats most of iThink's documented
